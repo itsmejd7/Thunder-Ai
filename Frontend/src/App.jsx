@@ -37,7 +37,7 @@ function App() {
 
   return (
     <Router>
-      <div className='app'>
+      <div className='app min-h-screen flex flex-col'>
         <MyContext.Provider value={providerValues}>
           <Routes>
             <Route path="/login" element={<AuthPage mode="login" />} />
@@ -45,9 +45,9 @@ function App() {
             <Route path="/*" element={
               auth ? (
                 <>
-                  {/* Hamburger menu for mobile */}
+                  {/* Hamburger menu for mobile - always fixed at top left, above overlay/sidebar */}
                   <button
-                    className="fixed top-4 left-4 z-50 bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
+                    className="fixed top-4 left-4 z-[100] bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
                     style={{ display: sidebarOpen ? 'none' : 'block' }}
                     onClick={() => setSidebarOpen(true)}
                     aria-label="Open sidebar"
@@ -58,7 +58,7 @@ function App() {
                   {/* Overlay for mobile sidebar */}
                   {sidebarOpen && (
                     <div
-                      className="sidebar-overlay"
+                      className="sidebar-overlay z-40"
                       onClick={() => setSidebarOpen(false)}
                     />
                   )}
@@ -71,8 +71,8 @@ function App() {
                     <Sidebar />
                   </div>
 
-                  {/* Main Content */}
-                  <div className="main-content-mobile flex-1 flex flex-col min-h-screen">
+                  {/* Main Content - flex for desktop, full width for mobile */}
+                  <div className="main-content-mobile flex-1 flex flex-col min-h-screen lg:ml-[270px] transition-all duration-300">
                     <ChatWindow />
                   </div>
                 </>
