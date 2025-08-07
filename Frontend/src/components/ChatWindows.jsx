@@ -176,45 +176,42 @@ function ChatWindow() {
             </div>
             
             {/* Chat Input: where the user types their message */}
-            <div className="input-area flex items-center gap-2 bg-white border-t border-blue-100 px-2 py-2 md:px-4 md:py-3 fixed bottom-0 left-0 w-full max-w-4xl mx-auto z-30" style={{boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'}}>
-                <div className="w-full">
-                    <div className="bg-white rounded-2xl border border-blue-200 shadow-lg overflow-hidden flex items-end">
-                        {/* Textarea for user to type their message */}
-                        <textarea
-                            ref={textareaRef}
-                            className="flex-1 bg-transparent text-blue-900 placeholder-blue-400 px-4 py-3 focus:outline-none text-base resize-none max-h-32 touch-manipulation"
-                            placeholder="Message Thunder-AI..."
-                            value={prompt}
-                            onChange={(e) => setPrompt(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey ? getReply() : null}
-                            disabled={loading}
-                            rows="1"
-                            style={{ minHeight: '44px', fontSize: '1.1em', border: 'none', outline: 'none', width: '100%' }}
-                        />
-                        {/* Send button (shows spinner when loading) */}
-                        <button
-                            className={`ml-2 p-3 rounded-xl transition-all duration-200 touch-manipulation flex items-center justify-center ${
-                                loading || !prompt.trim()
-                                    ? 'text-blue-200 cursor-not-allowed bg-blue-50'
-                                    : 'text-blue-500 hover:text-blue-400 hover:bg-blue-100 bg-blue-100'
-                            }`}
-                            onClick={getReply}
-                            disabled={loading || !prompt.trim()}
-                            style={{ minWidth: '44px', minHeight: '44px', fontSize: '1.2em' }}
-                            aria-label="Send message"
-                        >
-                            {loading ? (
-                                <ScaleLoader color="#1976d2" size={6} />
-                            ) : (
-                                <i className="fa-solid fa-paper-plane"></i>
-                            )}
-                        </button>
-                    </div>
-                    {/* Info message for the user */}
-                    <p className="text-blue-400 text-xs text-center mt-2">
-                        Thunder-AI can make mistakes. Consider checking important information.
-                    </p>
+            <div className="input-area fixed bottom-0 left-0 w-full bg-white border-t border-blue-100 z-30 flex items-center justify-center px-2 py-2 md:px-4 md:py-3" style={{boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'}}>
+              <div className="w-full max-w-4xl mx-auto">
+                <div className="bg-white rounded-2xl border border-blue-200 shadow-lg overflow-hidden flex items-end">
+                  <textarea
+                    ref={textareaRef}
+                    className="flex-1 bg-transparent text-blue-900 placeholder-blue-400 px-4 py-3 focus:outline-none text-base resize-none max-h-32 touch-manipulation"
+                    placeholder="Message Thunder-AI..."
+                    value={prompt}
+                    onChange={(e) => setPrompt(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && !e.shiftKey ? getReply() : null}
+                    disabled={loading}
+                    rows="1"
+                    style={{ minHeight: '44px', fontSize: '1.1em', border: 'none', outline: 'none', width: '100%' }}
+                  />
+                  <button
+                    className={`ml-2 p-3 rounded-xl transition-all duration-200 touch-manipulation flex items-center justify-center ${
+                      loading || !prompt.trim()
+                        ? 'text-blue-200 cursor-not-allowed bg-blue-50'
+                        : 'text-blue-500 hover:text-blue-400 hover:bg-blue-100 bg-blue-100'
+                    }`}
+                    onClick={getReply}
+                    disabled={loading || !prompt.trim()}
+                    style={{ minWidth: '44px', minHeight: '44px', fontSize: '1.2em' }}
+                    aria-label="Send message"
+                  >
+                    {loading ? (
+                      <ScaleLoader color="#1976d2" size={6} />
+                    ) : (
+                      <i className="fa-solid fa-paper-plane"></i>
+                    )}
+                  </button>
                 </div>
+                <p className="text-blue-400 text-xs text-center mt-2">
+                  Thunder-AI can make mistakes. Consider checking important information.
+                </p>
+              </div>
             </div>
         </div>
     );

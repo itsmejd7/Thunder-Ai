@@ -45,10 +45,10 @@ function App() {
             <Route path="/*" element={
               auth ? (
                 <>
-                  {/* Hamburger menu for mobile - always fixed at top left, above overlay/sidebar */}
+                  {/* Hamburger menu for mobile - only show on mobile */}
                   <button
                     className="fixed top-4 left-4 z-[100] bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
-                    style={{ display: sidebarOpen ? 'none' : 'block' }}
+                    style={{ display: sidebarOpen ? 'none' : undefined }}
                     onClick={() => setSidebarOpen(true)}
                     aria-label="Open sidebar"
                   >
