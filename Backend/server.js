@@ -11,11 +11,24 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 
-// CORS configuration for production
+// Allow multiple origins for CORS
+const allowedOrigins = [
+  'https://thunder-ai-frontend.vercel.app',
+  'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app',
+  'https://thunder-ai-amber.vercel.app', // <-- your deployed frontend
+  ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [])
+];
+
 app.use(cors({
-  origin: process.env.NODE_ENV === 'production' 
-    ? ['https://thunder-ai-frontend.vercel.app', 'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app']
-    : 'http://localhost:5173',
+  origin: function (origin, callback) {
+    // allow requests with no origin (like mobile apps, curl, etc.)
+    if (!origin) return callback(null, true);
+    if (allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    } else {
+      return callback(new Error('Not allowed by CORS: ' + origin));
+    }
+  },
   credentials: true
 }));
 
