@@ -9,8 +9,16 @@ import authRoutes from "./routes/auth.js";
 dotenv.config();
 
 const app = express();
-const PORT = 5000;
-app.use(cors());
+const PORT = process.env.PORT || 5000;
+
+// CORS configuration for production
+app.use(cors({
+  origin: process.env.NODE_ENV === 'production' 
+    ? ['https://thunder-ai-frontend.vercel.app', 'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app']
+    : 'http://localhost:5173',
+  credentials: true
+}));
+
 app.use(express.json());
 
 app.use("/api/auth", authRoutes);
