@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MyContext } from './Mycontext.jsx';
 import logo from '../assets/Thunder-Ai.png';
 
-const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+const API_URL = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
 
 export default function AuthPage({ mode = 'login' }) {
   const [form, setForm] = useState({ email: '', password: '' });

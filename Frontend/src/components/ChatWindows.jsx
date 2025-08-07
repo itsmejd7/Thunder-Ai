@@ -75,7 +75,7 @@ function ChatWindow() {
         // Try to connect to backend if available
         try {
             const token = localStorage.getItem('token');
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
             const options = {
                 method: "POST",
                 headers: {

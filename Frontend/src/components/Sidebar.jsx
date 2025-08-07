@@ -20,7 +20,7 @@ function Sidebar() {
     const getAllThreads = async () => {
         try {
             // Try the main backend endpoint
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
             const response = await fetch(`${apiUrl}/api/thread`, { headers: getAuthHeaders() });
             const res = await response.json();
             console.log("Threads response:", res);
@@ -110,7 +110,7 @@ function Sidebar() {
 
         try {
             // Try to fetch the thread's chat history from the backend
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
             let response = await fetch(`${apiUrl}/api/thread/${newThreadId}`, { headers: getAuthHeaders() });
             if (!response.ok) {
                 throw new Error("Backend not available");
@@ -146,7 +146,7 @@ function Sidebar() {
     const deleteThread = async (threadId) => {
         try {
             // Try to delete from the main backend
-            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
             let response = await fetch(`${apiUrl}/api/thread/${threadId}`, { method: "DELETE", headers: getAuthHeaders() });
             if (!response.ok) {
                 throw new Error("Backend not available");
