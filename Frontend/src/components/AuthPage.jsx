@@ -1,6 +1,6 @@
 import React, { useState, useContext } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { MyContext } from './MyContext.jsx';
+import { MyContext } from './Mycontext.jsx';
 import logo from '../assets/Thunder-Ai.png';
 
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
