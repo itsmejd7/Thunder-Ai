@@ -178,7 +178,19 @@ function Chat({ loading }) {
                                             components={{
                                                 code: ({node, inline, className, children, ...props}) => {
                                                     const match = /language-(\w+)/.exec(className || '');
-                                                    const codeContent = safeString(children);
+                                                    // Fix: Extract code string from children, even if it's an object
+                                                    let codeContent = '';
+                                                    if (Array.isArray(children)) {
+                                                        codeContent = children.map(child =>
+                                                            typeof child === 'string' ? child : (child && child.props && child.props.children ? child.props.children : '')
+                                                        ).join('');
+                                                    } else if (typeof children === 'string') {
+                                                        codeContent = children;
+                                                    } else if (children && children.props && children.props.children) {
+                                                        codeContent = children.props.children;
+                                                    } else {
+                                                        codeContent = safeString(children);
+                                                    }
                                                     return !inline ? (
                                                         <CodeBlock code={codeContent.replace(/\n$/, "")} language={match ? match[1] : undefined} />
                                                     ) : (
@@ -211,7 +223,19 @@ function Chat({ loading }) {
                                     components={{
                                         code: ({node, inline, className, children, ...props}) => {
                                             const match = /language-(\w+)/.exec(className || '');
-                                            const codeContent = safeString(children);
+                                            // Fix: Extract code string from children, even if it's an object
+                                            let codeContent = '';
+                                            if (Array.isArray(children)) {
+                                                codeContent = children.map(child =>
+                                                    typeof child === 'string' ? child : (child && child.props && child.props.children ? child.props.children : '')
+                                                ).join('');
+                                            } else if (typeof children === 'string') {
+                                                codeContent = children;
+                                            } else if (children && children.props && children.props.children) {
+                                                codeContent = children.props.children;
+                                            } else {
+                                                codeContent = safeString(children);
+                                            }
                                             return !inline ? (
                                                 <CodeBlock code={codeContent.replace(/\n$/, "")} language={match ? match[1] : undefined} />
                                             ) : (
