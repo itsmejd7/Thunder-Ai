@@ -75,6 +75,7 @@ function ChatWindow() {
         // Try to connect to backend if available
         try {
             const token = localStorage.getItem('token');
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
             const options = {
                 method: "POST",
                 headers: {
@@ -87,7 +88,7 @@ function ChatWindow() {
                 }),
             };
 
-            const response = await fetch("http://localhost:5000/api/chat", options);
+            const response = await fetch(`${apiUrl}/api/chat`, options);
             if (response.ok) {
                 const res = await response.json();
                 

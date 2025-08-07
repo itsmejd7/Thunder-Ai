@@ -2,6 +2,7 @@ import { useContext, useEffect } from "react";
 import { MyContext } from "./Mycontext.jsx";
 import {v1 as uuidv1} from "uuid";
 import { useNavigate } from "react-router-dom";
+import logo from '../assets/Thunder-Ai.png';
 
 // Sidebar component displays the chat sidebar with new chat button, list of conversations, and user info
 function Sidebar() {
@@ -19,7 +20,8 @@ function Sidebar() {
     const getAllThreads = async () => {
         try {
             // Try the main backend endpoint
-            const response = await fetch("http://localhost:5000/api/thread", { headers: getAuthHeaders() });
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            const response = await fetch(`${apiUrl}/api/thread`, { headers: getAuthHeaders() });
             const res = await response.json();
             console.log("Threads response:", res);
             
@@ -108,7 +110,8 @@ function Sidebar() {
 
         try {
             // Try to fetch the thread's chat history from the backend
-            let response = await fetch(`http://localhost:5000/api/thread/${newThreadId}`, { headers: getAuthHeaders() });
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            let response = await fetch(`${apiUrl}/api/thread/${newThreadId}`, { headers: getAuthHeaders() });
             if (!response.ok) {
                 throw new Error("Backend not available");
             }
@@ -143,7 +146,8 @@ function Sidebar() {
     const deleteThread = async (threadId) => {
         try {
             // Try to delete from the main backend
-            let response = await fetch(`http://localhost:5000/api/thread/${threadId}`, { method: "DELETE", headers: getAuthHeaders() });
+            const apiUrl = import.meta.env.VITE_API_URL || 'http://localhost:5000';
+            let response = await fetch(`${apiUrl}/api/thread/${threadId}`, { method: "DELETE", headers: getAuthHeaders() });
             if (!response.ok) {
                 throw new Error("Backend not available");
             }
@@ -214,7 +218,7 @@ function Sidebar() {
                     className="flex items-center justify-center w-full bg-blue-500 p-3 rounded-xl shadow-md hover:bg-blue-600 transition-all duration-200 border border-blue-400 hover:border-blue-600 group text-white font-semibold text-base gap-2 touch-manipulation"
                 >
                     <img 
-                        src="/src/assets/Thunder-Ai.png" 
+                        src={logo} 
                         alt="Thunder-AI logo" 
                         className="w-7 h-7 rounded object-cover shadow"
                         onError={(e) => {

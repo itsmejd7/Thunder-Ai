@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { MyContext } from './MyContext.jsx';
 import logo from '../assets/Thunder-Ai.png';
 
-const API_URL = 'http://localhost:5000/api/auth';
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000';
 
 export default function AuthPage({ mode = 'login' }) {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -22,7 +22,7 @@ export default function AuthPage({ mode = 'login' }) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/${pageMode}`, {
+      const res = await fetch(`${API_URL}/api/auth/${pageMode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
