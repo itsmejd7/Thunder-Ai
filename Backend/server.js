@@ -21,38 +21,40 @@ app.use(cors({
 
 app.use(express.json());
 
+// Health check endpoint
+app.get("/", (req, res) => {
+  res.json({ message: "Thunder-AI Backend is running!" });
+});
+
+// Test endpoint
+app.get("/test", (req, res) => {
+  res.json({ 
+    message: "Backend is working!",
+    timestamp: new Date().toISOString(),
+    env: process.env.NODE_ENV || 'development'
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 
 const connectdb = async () => {
   try {
+    if (!process.env.MONGODB_URI) {
+      console.log("MONGODB_URI not found, skipping database connection");
+      return;
+    }
     await mongoose.connect(process.env.MONGODB_URI);
     console.log("Connected to Database");
   } catch (err) {
     console.error("Database connection error:", err.message);
+    console.log("Server will start without database connection");
   }
 };
 
-connectdb();
-
-// Optional: direct chat POST route
-app.post("/chat", async (req, res) => {
-  const userInput = req.body.message;
-
-  if (!userInput) {
-    return res.status(400).json({ error: "Message input missing." });
-  }
-
-  try {
-    const reply = await getGeminiReply(userInput);
-    console.log(`AI Response: ${reply}`);
-    res.json({ reply });
-  } catch (err) {
-    console.error(" API Error:", err.message);
-    res.status(500).json({ error: "Error contacting Gemini API" });
-  }
-});
-
+// Start server first, then try to connect to database
 app.listen(PORT, () => {
-  console.log(`Server running at http://localhost:${PORT}`);
+  console.log(`Server running on port ${PORT}`);
+  // Try to connect to database after server starts
+  connectdb();
 });
