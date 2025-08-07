@@ -176,7 +176,8 @@ function ChatWindow() {
             </div>
             
             {/* Chat Input: where the user types their message */}
-            <div className="input-area fixed bottom-0 left-0 w-full bg-white border-t border-blue-100 z-30 flex items-center justify-center px-2 py-2 md:px-4 md:py-3" style={{boxShadow: '0 -2px 8px rgba(0,0,0,0.04)'}}>
+            <div className="input-area w-full bg-white border-t border-blue-100 z-30 flex items-center justify-center px-2 py-2 md:px-4 md:py-3"
+              style={{boxShadow: '0 -2px 8px rgba(0,0,0,0.04)', position: 'sticky', bottom: 0}}>
               <div className="w-full max-w-4xl mx-auto">
                 <div className="bg-white rounded-2xl border border-blue-200 shadow-lg overflow-hidden flex items-end">
                   <textarea

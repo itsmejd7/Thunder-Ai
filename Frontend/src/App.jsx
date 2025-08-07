@@ -44,7 +44,7 @@ function App() {
             <Route path="/signup" element={<AuthPage mode="signup" />} />
             <Route path="/*" element={
               auth ? (
-                <>
+                <div className="flex flex-col lg:flex-row min-h-screen w-full">
                   {/* Hamburger menu for mobile - only show on mobile */}
                   <button
                     className="fixed top-4 left-4 z-[100] bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
@@ -71,11 +71,11 @@ function App() {
                     <Sidebar />
                   </div>
 
-                  {/* Main Content - flex for desktop, full width for mobile */}
-                  <div className="main-content-mobile flex-1 flex flex-col min-h-screen lg:ml-[270px] transition-all duration-300">
+                  {/* Main Content - chat area with input at bottom */}
+                  <div className="flex-1 flex flex-col min-h-screen bg-[#eaf6fd]">
                     <ChatWindow />
                   </div>
-                </>
+                </div>
               ) : (
                 <Navigate to="/login" replace />
               )
