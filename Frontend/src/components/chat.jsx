@@ -280,14 +280,22 @@ function Chat({ loading }) {
 
 // Add CodeBlock component for code rendering with copy button
 function CodeBlock({ code, language }) {
-  const handleCopy = () => {
-    navigator.clipboard.writeText(code);
+  const [copied, setCopied] = React.useState(false);
+  const handleCopy = async () => {
+    try {
+      await navigator.clipboard.writeText(code);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch (err) {
+      setCopied(false);
+      alert('Failed to copy!');
+    }
   };
   return (
     <div style={{ position: "relative", marginBottom: "1em", width: "100%" }}>
       <pre style={{
-        background: "#1e293b", // Dark background
-        color: "#f1f5f9", // Light text for contrast
+        background: "#1e293b",
+        color: "#f1f5f9",
         padding: "0.75em",
         borderRadius: "8px",
         overflowX: "auto",
@@ -308,17 +316,19 @@ function CodeBlock({ code, language }) {
           right: "6px",
           padding: "0.25em 0.5em",
           cursor: "pointer",
-          background: "#3b82f6",
+          background: copied ? "#22c55e" : "#3b82f6",
           color: "#ffffff",
           border: "none",
           borderRadius: "4px",
           fontWeight: 500,
           fontSize: "0.7em",
           minHeight: "28px",
-          minWidth: "44px"
+          minWidth: "44px",
+          transition: "background 0.2s"
         }}
+        aria-label="Copy code"
       >
-        Copy
+        {copied ? "Copied!" : "Copy"}
       </button>
     </div>
   );

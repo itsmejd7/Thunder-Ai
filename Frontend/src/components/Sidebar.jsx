@@ -200,27 +200,28 @@ function Sidebar() {
 
     // The UI for the sidebar
     return (
-        <aside className="flex bg-white text-blue-900 h-screen w-[270px] lg:w-[270px] flex-col border-r border-blue-200 shadow-xl rounded-tr-2xl rounded-br-2xl lg:rounded-none">
+        <aside className="sidebar-mobile bg-white text-blue-900 h-screen w-[270px] lg:w-[270px] flex-col border-r border-blue-200 shadow-xl rounded-tr-2xl rounded-br-2xl lg:rounded-none">
 
             {/* Top: New Chat Button and Close Button (Mobile) */}
             <div className="p-4 border-b border-blue-100 bg-blue-50 rounded-tr-2xl lg:rounded-none">
                 <div className="flex items-center justify-between mb-3">
                     <h2 className="text-lg font-semibold text-blue-900 lg:hidden">Menu</h2>
-                    <button 
-                        className="lg:hidden p-2 rounded-lg hover:bg-blue-100 transition-colors duration-200 touch-manipulation"
+                    <button
+                        className="lg:hidden p-3 rounded-lg hover:bg-blue-100 transition-colors duration-200 touch-manipulation"
                         onClick={() => setSidebarOpen(false)}
+                        aria-label="Close sidebar"
                     >
-                        <i className="fa-solid fa-times text-blue-700 text-lg"></i>
+                        <i className="fa-solid fa-times text-blue-700 text-xl"></i>
                     </button>
                 </div>
-                <button 
+                <button
                     onClick={createNewChat}
-                    className="flex items-center justify-center w-full bg-blue-500 p-3 rounded-xl shadow-md hover:bg-blue-600 transition-all duration-200 border border-blue-400 hover:border-blue-600 group text-white font-semibold text-base gap-2 touch-manipulation"
+                    className="new-chat-btn flex items-center justify-center w-full bg-blue-500 p-4 rounded-xl shadow-md hover:bg-blue-600 transition-all duration-200 border border-blue-400 hover:border-blue-600 group text-white font-semibold text-lg gap-2 touch-manipulation"
                 >
-                    <img 
-                        src={logo} 
-                        alt="Thunder-AI logo" 
-                        className="w-7 h-7 rounded object-cover shadow"
+                    <img
+                        src={logo}
+                        alt="Thunder-AI logo"
+                        className="w-8 h-8 rounded object-cover shadow"
                         onError={(e) => {
                             e.target.style.display = 'none';
                         }}

@@ -176,7 +176,7 @@ function ChatWindow() {
             </div>
             
             {/* Chat Input: where the user types their message */}
-            <div className="flex-shrink-0 p-4 bg-blue-50 border-t border-blue-200 relative z-10">
+            <div className="input-area flex items-center gap-2 bg-white border-t border-blue-100 px-2 py-2 md:px-4 md:py-3 fixed bottom-0 left-0 w-full max-w-4xl mx-auto z-30">
                 <div className="max-w-3xl mx-auto">
                     <div className="bg-white rounded-lg border border-blue-200 shadow-lg overflow-hidden">
                         <div className="flex items-end p-3">

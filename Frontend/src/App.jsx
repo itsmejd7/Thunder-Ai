@@ -2,7 +2,7 @@ import './App.css';
 import Sidebar from "./components/Sidebar.jsx"
 import ChatWindow from './components/ChatWindows.jsx';
 import { MyContext } from './components/Mycontext.jsx';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {v1 as uuidv1} from "uuid";
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './components/AuthPage.jsx';
@@ -28,6 +28,13 @@ function App() {
     sidebarOpen, setSidebarOpen
   };
 
+  // Close sidebar on route change (for mobile)
+  useEffect(() => {
+    const closeSidebar = () => setSidebarOpen(false);
+    window.addEventListener('resize', closeSidebar);
+    return () => window.removeEventListener('resize', closeSidebar);
+  }, []);
+
   return (
     <Router>
       <div className='app'>
@@ -38,23 +45,34 @@ function App() {
             <Route path="/*" element={
               auth ? (
                 <>
-                  {/* Mobile Overlay */}
+                  {/* Hamburger menu for mobile */}
+                  <button
+                    className="fixed top-4 left-4 z-50 bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
+                    style={{ display: sidebarOpen ? 'none' : 'block' }}
+                    onClick={() => setSidebarOpen(true)}
+                    aria-label="Open sidebar"
+                  >
+                    <i className="fa-solid fa-bars text-xl"></i>
+                  </button>
+
+                  {/* Overlay for mobile sidebar */}
                   {sidebarOpen && (
-                    <div 
-                      className="fixed inset-0 bg-black bg-opacity-50 z-40 lg:hidden"
+                    <div
+                      className="sidebar-overlay"
                       onClick={() => setSidebarOpen(false)}
                     />
                   )}
-                  
+
                   {/* Sidebar */}
-                  <div className={`fixed lg:relative z-50 transition-transform duration-300 ease-in-out ${
-                    sidebarOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'
-                  }`}>
+                  <div
+                    className={`sidebar-mobile ${sidebarOpen ? 'open' : 'closed'} lg:relative lg:translate-x-0`}
+                    style={{ zIndex: 50 }}
+                  >
                     <Sidebar />
                   </div>
-                  
+
                   {/* Main Content */}
-                  <div className="flex-1 flex flex-col min-h-screen">
+                  <div className="main-content-mobile flex-1 flex flex-col min-h-screen">
                     <ChatWindow />
                   </div>
                 </>
