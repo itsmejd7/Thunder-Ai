@@ -1,7 +1,7 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import Thread from "../models/Thread.js";
-import { getGeminiReply } from "../utils/APICHAT.js";
+import { getGeminiReply, listAvailableModels } from "../utils/APICHAT.js";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
@@ -127,6 +127,16 @@ router.post("/chat", async (req, res) => {
       type: err?.constructor?.name,
       code: err?.code
     });
+  }
+});
+
+// GET /models - list available Gemini models for this API key (auth required)
+router.get("/models", async (req, res) => {
+  try {
+    const models = await listAvailableModels();
+    res.json(models);
+  } catch (err) {
+    res.status(500).json({ error: "Failed to list models", details: err.message });
   }
 });
 

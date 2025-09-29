@@ -3,8 +3,8 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config(); 
 
-// Gemini API configuration
-const API_KEY = process.env.GEMINI_API_KEY;
+// Gemini API configuration (trim to avoid accidental whitespace)
+const API_KEY = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
 
 export async function getGeminiReply(userInput) {
   // Step 1: Check API key
@@ -166,3 +166,16 @@ export async function getGeminiReply(userInput) {
     throw wrapped;
   }
 } 
+
+// List available models for the configured API key (uses v1 REST)
+export async function listAvailableModels() {
+  const key = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
+  if (!key) throw new Error("GEMINI_API_KEY missing");
+  const url = `https://generativelanguage.googleapis.com/v1/models?key=${key}`;
+  const res = await fetch(url);
+  if (!res.ok) {
+    const msg = await res.text();
+    throw new Error(`ListModels failed: ${res.status} ${res.statusText} - ${msg}`);
+  }
+  return await res.json();
+}
