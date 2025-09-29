@@ -29,7 +29,7 @@ export async function getGeminiReply(userInput) {
     const genAI = new GoogleGenerativeAI({ apiKey: API_KEY, apiVersion: 'v1' });
     
     // Use model from environment if provided; default to a broadly supported model
-    const configuredModel = process.env.GEMINI_MODEL || "gemini-1.0-pro";
+    const configuredModel = process.env.GEMINI_MODEL || "gemini-1.0-flash-lite";
     console.log("🤖 Using model:", configuredModel);
     const model = genAI.getGenerativeModel({ model: configuredModel });
     
