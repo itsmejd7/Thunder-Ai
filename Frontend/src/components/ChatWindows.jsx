@@ -3,44 +3,44 @@ import { MyContext } from "./Mycontext.jsx";
 import { useContext, useState, useEffect, useRef } from "react";
 import {ScaleLoader} from "react-spinners";
 
-// ChatWindow component is the main area where you chat with Thunder-AI
+
 function ChatWindow() {
-    // Get state and functions from context (shared state for the app)
+   
     const {prompt, setPrompt, reply, setReply, currThreadId, setPrevChats, setNewChat, sidebarOpen, setSidebarOpen} = useContext(MyContext);
-    // Local state for loading spinner and profile dropdown
-    const [loading, setLoading] = useState(false); // Is the AI replying?
-    const [isOpen, setIsOpen] = useState(false); // Is the profile dropdown open?
-    const textareaRef = useRef(null); // Ref for the textarea
+   
+    const [loading, setLoading] = useState(false); 
+    const [isOpen, setIsOpen] = useState(false); 
+    const textareaRef = useRef(null); 
     
     const triggerSidebarRefresh = () => {
       const event = new Event('refreshThreads');
       window.dispatchEvent(event);
     };
 
-    // Focus textarea when new chat is created
+    
     useEffect(() => {
         if (sidebarOpen === false && textareaRef.current) {
-            // Small delay to ensure sidebar animation is complete
+            
             setTimeout(() => {
                 textareaRef.current?.focus();
             }, 300);
         }
     }, [sidebarOpen]);
 
-    // Function to send the user's message and get a reply from the AI
+    
     const getReply = async () => {
-        if (!prompt.trim()) return; // Don't send empty messages
+        if (!prompt.trim()) return; 
         
-        setLoading(true); // Show loading spinner
-        setNewChat(false); // Not a new chat anymore
+        setLoading(true); 
+        setNewChat(false); 
         
         const userMessage = prompt;
-        setPrompt(""); // Clear input immediately
+        setPrompt(""); 
 
-        // Add user message to chat immediately for better UX
+        
         setPrevChats(prev => {
             const updatedChats = [...prev, { role: "user", content: userMessage }];
-            // Save to local storage
+           
             try {
                 localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats));
             } catch (err) {

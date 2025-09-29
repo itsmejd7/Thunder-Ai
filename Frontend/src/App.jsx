@@ -28,7 +28,7 @@ function App() {
     sidebarOpen, setSidebarOpen
   };
 
-  // Close sidebar on route change (for mobile)
+
   useEffect(() => {
     const closeSidebar = () => setSidebarOpen(false);
     window.addEventListener('resize', closeSidebar);
@@ -45,7 +45,7 @@ function App() {
             <Route path="/*" element={
               auth ? (
                 <div className="flex flex-col lg:flex-row min-h-screen w-full">
-                  {/* Hamburger menu for mobile - only show on mobile */}
+                 
                   <button
                     className="fixed top-4 left-4 z-[100] bg-blue-500 text-white p-2 rounded-lg shadow-lg lg:hidden"
                     style={{ display: sidebarOpen ? 'none' : undefined }}
@@ -55,7 +55,7 @@ function App() {
                     <i className="fa-solid fa-bars text-xl"></i>
                   </button>
 
-                  {/* Overlay for mobile sidebar */}
+                  
                   {sidebarOpen && (
                     <div
                       className="sidebar-overlay z-40"
@@ -63,7 +63,7 @@ function App() {
                     />
                   )}
 
-                  {/* Sidebar */}
+                 
                   <div
                     className={`sidebar-mobile ${sidebarOpen ? 'open' : 'closed'} lg:relative lg:translate-x-0`}
                     style={{ zIndex: 50 }}
@@ -71,7 +71,7 @@ function App() {
                     <Sidebar />
                   </div>
 
-                  {/* Main Content - chat area with input at bottom */}
+                  
                   <div className="flex-1 flex flex-col min-h-screen bg-[#eaf6fd]">
                     <ChatWindow />
                   </div>

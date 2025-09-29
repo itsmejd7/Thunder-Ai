@@ -96,7 +96,15 @@ router.post("/chat", async (req, res) => {
     await thread.save();
     res.json({ reply: assistantReply });
   } catch (err) {
-    res.status(500).json({ error: "Error contacting Gemini API" });
+    console.error("Gemini API call failed:", err?.message);
+    if (err?.response) {
+      console.error("Gemini API response status:", err.response.status);
+      console.error("Gemini API response data:", err.response.data);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      return res.status(500).json({ error: "Error contacting Gemini API", details: err?.message });
+    }
+    return res.status(500).json({ error: "Error contacting Gemini API" });
   }
 });
 
