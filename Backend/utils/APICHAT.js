@@ -26,11 +26,12 @@ export async function getGeminiReply(userInput) {
     console.log("🤖 Initializing Google AI...");
     
     // Initialize the Google AI SDK
-    const genAI = new GoogleGenerativeAI(API_KEY);
+    const genAI = new GoogleGenerativeAI({ apiKey: API_KEY, apiVersion: 'v1' });
     
-    // Use gemini-1.5-pro model first; more universally available in some regions
-    console.log("🤖 Using gemini-1.5-pro-latest model...");
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro-latest" });
+    // Use model from environment if provided; default to a broadly supported model
+    const configuredModel = process.env.GEMINI_MODEL || "gemini-1.0-pro";
+    console.log("🤖 Using model:", configuredModel);
+    const model = genAI.getGenerativeModel({ model: configuredModel });
     
     console.log("🤖 Sending request to Gemini API...");
     
@@ -104,7 +105,7 @@ export async function getGeminiReply(userInput) {
     if (err.message.includes("not found") || err.message.includes("404") || err.message.includes("not supported")) {
       console.error("❌ Model not found. Trying gemini-1.5-flash-latest...");
       try {
-        const genAI = new GoogleGenerativeAI(API_KEY);
+        const genAI = new GoogleGenerativeAI({ apiKey: API_KEY, apiVersion: 'v1' });
         const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
         const result = await model.generateContent(userInput);
         const response = await result.response;

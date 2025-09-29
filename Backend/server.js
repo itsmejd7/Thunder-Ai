@@ -54,7 +54,8 @@ app.get("/test", (req, res) => {
   res.json({ 
     message: "Backend is working!",
     timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development'
+    env: process.env.NODE_ENV || 'development',
+    model: process.env.GEMINI_MODEL || 'gemini-1.0-pro'
   });
 });
 
@@ -64,6 +65,7 @@ app.get("/debug", (req, res) => {
     hasGeminiKey: !!process.env.GEMINI_API_KEY,
     keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
     keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + "..." : "NOT_FOUND",
+    model: process.env.GEMINI_MODEL || 'gemini-1.0-pro',
     exposeErrors: process.env.EXPOSE_ERRORS,
     nodeEnv: process.env.NODE_ENV
   });
