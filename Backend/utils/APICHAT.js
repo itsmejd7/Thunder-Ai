@@ -3,10 +3,45 @@ import { GoogleGenerativeAI } from "@google/generative-ai";
 
 dotenv.config(); 
 
-// Gemini API configuration (trim to avoid accidental whitespace)
+// Provider configuration (trim to avoid accidental whitespace)
 const API_KEY = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
+const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.trim() : undefined;
+const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
 
 export async function getGeminiReply(userInput) {
+  // If OpenRouter is configured, use it
+  if (OPENROUTER_API_KEY) {
+    try {
+      console.log("🤖 Using OpenRouter model:", OPENROUTER_MODEL);
+      const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: OPENROUTER_MODEL,
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: String(userInput) }
+          ],
+          temperature: 0.7
+        })
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+      }
+      const data = await response.json();
+      const text = data?.choices?.[0]?.message?.content || "No response";
+      return text;
+    } catch (err) {
+      console.error("❌ OpenRouter request failed:", err.message);
+      throw err;
+    }
+  }
+
+  // Otherwise use Gemini API
   // Step 1: Check API key
   console.log("🔑 Checking API key...");
   console.log("🔑 API Key present:", Boolean(API_KEY));

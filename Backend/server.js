@@ -66,6 +66,8 @@ app.get("/debug", (req, res) => {
     keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
     keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + "..." : "NOT_FOUND",
     model: process.env.GEMINI_MODEL || 'gemini-1.0-pro',
+    openrouterConfigured: !!process.env.OPENROUTER_API_KEY,
+    openrouterModel: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-r1:free',
     exposeErrors: process.env.EXPOSE_ERRORS,
     nodeEnv: process.env.NODE_ENV
   });
