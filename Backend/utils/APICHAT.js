@@ -9,19 +9,16 @@ const API_KEY = process.env.GEMINI_API_KEY;
 export async function getGeminiReply(userInput) {
   // Step 1: Check API key
   console.log("🔑 Checking API key...");
-  console.log("🔑 API Key exists:", !!API_KEY);
-  console.log("🔑 API Key length:", API_KEY ? API_KEY.length : 0);
-  console.log("🔑 API Key starts with:", API_KEY ? API_KEY.substring(0, 10) + "..." : "NOT FOUND");
+  console.log("🔑 API Key present:", Boolean(API_KEY));
   
   if (!API_KEY) {
     console.error("❌ No Gemini API key found in environment variables");
     throw new Error("No Gemini API key found. Please add GEMINI_API_KEY to your .env file");
   }
 
-  // Check if API key looks valid (should start with AIza and be ~39 characters)
+  // Basic format check without logging key contents
   if (!API_KEY.startsWith('AIza') || API_KEY.length < 35) {
     console.error("❌ API key format looks invalid. Should start with 'AIza' and be ~39 characters");
-    console.error("❌ Current key format:", API_KEY.substring(0, 10) + "...");
     throw new Error("Invalid API key format. Please check your GEMINI_API_KEY");
   }
 

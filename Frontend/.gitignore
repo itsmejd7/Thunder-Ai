@@ -24,3 +24,9 @@ dist-ssr
 *.sw?
 
 .vercel
+
+# Node modules
+node_modules/
+
+# Environment variables
+.env

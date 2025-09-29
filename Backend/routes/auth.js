@@ -1,4 +1,5 @@
 import express from "express";
+import rateLimit from "express-rate-limit";
 import User from "../models/User.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
@@ -6,19 +7,30 @@ import jwt from "jsonwebtoken";
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "changeme-super-secret";
 
-// Signup route
-router.post("/signup", async (req, res) => {
-  const { email, password } = req.body;
+// Per-route limiter for auth endpoints
+const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false });
+
+router.post("/signup", authLimiter, async (req, res) => {
+  const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required." });
   }
   try {
-    const existing = await User.findOne({ email });
+    // Validate input types and sizes
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: "Invalid input." });
+    }
+    if (email.length > 254 || password.length > 200) {
+      return res.status(400).json({ error: "Input too long." });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+
+    const existing = await User.findOne({ email: normalizedEmail }).lean();
     if (existing) {
       return res.status(409).json({ error: "Email already registered." });
     }
     const hashed = await bcrypt.hash(password, 10);
-    const user = await User.create({ email, password: hashed });
+    const user = await User.create({ email: normalizedEmail, password: hashed });
     const token = jwt.sign({ userId: user._id, email: user.email }, JWT_SECRET, { expiresIn: "7d" });
     res.status(201).json({ token, email: user.email });
   } catch (err) {
@@ -27,13 +39,17 @@ router.post("/signup", async (req, res) => {
 });
 
 // Login route
-router.post("/login", async (req, res) => {
-  const { email, password } = req.body;
+router.post("/login", authLimiter, async (req, res) => {
+  const { email, password } = req.body || {};
   if (!email || !password) {
     return res.status(400).json({ error: "Email and password are required." });
   }
   try {
-    const user = await User.findOne({ email });
+    if (typeof email !== 'string' || typeof password !== 'string') {
+      return res.status(400).json({ error: "Invalid input." });
+    }
+    const normalizedEmail = email.trim().toLowerCase();
+    const user = await User.findOne({ email: normalizedEmail });
     if (!user) {
       return res.status(401).json({ error: "Invalid credentials." });
     }

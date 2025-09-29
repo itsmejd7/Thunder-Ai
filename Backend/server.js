@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
 import { getGeminiReply } from "./utils/APICHAT.js";
@@ -33,6 +34,15 @@ app.use(cors({
 }));
 
 app.use(express.json());
+
+// Global basic rate limiting
+const apiLimiter = rateLimit({
+  windowMs: 60 * 1000,
+  max: 60,
+  standardHeaders: true,
+  legacyHeaders: false,
+});
+app.use(apiLimiter);
 
 // Health check endpoint
 app.get("/", (req, res) => {
