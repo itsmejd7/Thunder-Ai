@@ -28,9 +28,9 @@ export async function getGeminiReply(userInput) {
     // Initialize the Google AI SDK
     const genAI = new GoogleGenerativeAI(API_KEY);
     
-    // Use gemini-1.5-flash model (compatible with current API)
-    console.log("🤖 Using gemini-1.5-flash model...");
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+    // Use gemini-1.5-pro model first; more universally available in some regions
+    console.log("🤖 Using gemini-1.5-pro model...");
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
     
     console.log("🤖 Sending request to Gemini API...");
     
@@ -83,12 +83,12 @@ export async function getGeminiReply(userInput) {
     console.error("❌ Gemini API request failed:", err.message);
     console.error("❌ Full error details:", err);
     
-    // If gemini-1.5-flash fails, try gemini-1.5-pro
+    // If gemini-1.5-pro fails, try gemini-1.5-flash
     if (err.message.includes("not found") || err.message.includes("404") || err.message.includes("not supported")) {
-      console.error("❌ Model not found. Trying gemini-1.5-pro...");
+      console.error("❌ Model not found. Trying gemini-1.5-flash...");
       try {
         const genAI = new GoogleGenerativeAI(API_KEY);
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
+        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
         const result = await model.generateContent(userInput);
         const response = await result.response;
         
@@ -128,10 +128,10 @@ export async function getGeminiReply(userInput) {
           }
         }
         
-        console.log("✅ Gemini API response received with gemini-1.5-pro");
+        console.log("✅ Gemini API response received with gemini-1.5-flash");
         return text;
       } catch (proErr) {
-        console.error("❌ gemini-1.5-pro also failed:", proErr.message);
+        console.error("❌ gemini-1.5-flash also failed:", proErr.message);
         throw proErr;
       }
     } else if (err.message.includes("API key not valid")) {
