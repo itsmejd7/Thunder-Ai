@@ -30,13 +30,7 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Explicitly handle preflight with same config
-app.options('*', cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization']
-}));
+// Note: cors middleware above will handle preflight automatically; no explicit '*' route (Express 5)
 
 app.use(express.json());
 
