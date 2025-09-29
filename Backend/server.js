@@ -58,6 +58,17 @@ app.get("/test", (req, res) => {
   });
 });
 
+// Debug endpoint to check environment
+app.get("/debug", (req, res) => {
+  res.json({
+    hasGeminiKey: !!process.env.GEMINI_API_KEY,
+    keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
+    keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + "..." : "NOT_FOUND",
+    exposeErrors: process.env.EXPOSE_ERRORS,
+    nodeEnv: process.env.NODE_ENV
+  });
+});
+
 app.use("/api/auth", authRoutes);
 app.use("/api", chatRoutes);
 

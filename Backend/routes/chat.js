@@ -114,14 +114,18 @@ router.post("/chat", async (req, res) => {
     res.json({ reply: assistantReply });
   } catch (err) {
     console.error("Gemini API call failed:", err?.message);
+    console.error("Full error object:", err);
     if (err?.response) {
       console.error("Gemini API response status:", err.response.status);
       console.error("Gemini API response data:", err.response.data);
     }
-    if (process.env.NODE_ENV !== 'production' || process.env.EXPOSE_ERRORS === 'true') {
-      return res.status(500).json({ error: "Error contacting Gemini API", details: err?.message });
-    }
-    return res.status(500).json({ error: "Error contacting Gemini API" });
+    // Always show details for debugging
+    return res.status(500).json({ 
+      error: "Error contacting Gemini API", 
+      details: err?.message,
+      type: err?.constructor?.name,
+      code: err?.code
+    });
   }
 });
 
