@@ -7,20 +7,22 @@ dotenv.config();
 const API_KEY = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.trim() : undefined;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
+const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
 
 export async function getGeminiReply(userInput) {
   // If OpenRouter is configured, use it
   if (OPENROUTER_API_KEY) {
-    try {
-      console.log("🤖 Using OpenRouter model:", OPENROUTER_MODEL);
+    const doRequest = async (model) => {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
         headers: {
           "Authorization": `Bearer ${OPENROUTER_API_KEY}`,
           "Content-Type": "application/json",
+          ...(process.env.OPENROUTER_REFERER ? { "HTTP-Referer": process.env.OPENROUTER_REFERER } : {}),
+          "X-Title": process.env.OPENROUTER_TITLE || "Thunder-AI"
         },
         body: JSON.stringify({
-          model: OPENROUTER_MODEL,
+          model,
           messages: [
             { role: "system", content: "You are a helpful assistant." },
             { role: "user", content: String(userInput) }
@@ -30,15 +32,39 @@ export async function getGeminiReply(userInput) {
       });
       if (!response.ok) {
         const errText = await response.text();
-        throw new Error(`OpenRouter error ${response.status}: ${errText}`);
+        const error = new Error(`OpenRouter error ${response.status}: ${errText}`);
+        error.status = response.status;
+        throw error;
       }
       const data = await response.json();
-      const text = data?.choices?.[0]?.message?.content || "No response";
-      return text;
-    } catch (err) {
-      console.error("❌ OpenRouter request failed:", err.message);
-      throw err;
+      return data?.choices?.[0]?.message?.content || "No response";
+    };
+
+    const modelsToTry = [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL];
+    for (let i = 0; i < modelsToTry.length; i += 1) {
+      const model = modelsToTry[i];
+      console.log("🤖 Using OpenRouter model:", model);
+      let attempt = 0;
+      const maxAttempts = 3;
+      while (attempt < maxAttempts) {
+        try {
+          return await doRequest(model);
+        } catch (err) {
+          // Retry on 429 with exponential backoff
+          if (err.status === 429 && attempt < maxAttempts - 1) {
+            const delayMs = 500 * Math.pow(2, attempt);
+            console.warn(`⚠️ OpenRouter 429. Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxAttempts})`);
+            await new Promise(r => setTimeout(r, delayMs));
+            attempt += 1;
+            continue;
+          }
+          console.error("❌ OpenRouter request failed:", err.message);
+          // Break to next model if 429 persists or other errors
+          break;
+        }
+      }
     }
+    throw new Error("All OpenRouter models failed (rate-limited or unavailable). Please try again later.");
   }
 
   // Otherwise use Gemini API
