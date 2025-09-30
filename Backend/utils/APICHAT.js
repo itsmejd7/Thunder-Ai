@@ -3,7 +3,7 @@ import dotenv from "dotenv";
 dotenv.config();
 
 const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.trim() : undefined;
-const GOOGLE_MODEL = process.env.GOOGLE_MODEL || "models/gemini-2.5-flash:generateContent";
+const GOOGLE_MODEL = process.env.GOOGLE_MODEL || "models/gemini-2.5-flash-lite:generateContent";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.trim() : undefined;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
 const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
