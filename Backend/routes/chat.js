@@ -118,7 +118,28 @@ router.post("/chat", async (req, res) => {
     res.json({ reply: assistantReply });
   } catch (err) {
     // Graceful fallback for local/dev or provider failure
-    const fallback = `Hello! I'm Thunder-AI. You said: "${String(message)}". This is a simulated response while the AI provider is unavailable.`;
+    // Try a tiny safe math evaluator for simple queries; otherwise show a neutral message
+    const tryEvalMath = (text) => {
+      try {
+        if (typeof text !== 'string') return null;
+        const expr = text.replace(/[^0-9+\-*/().\s]/g, '').trim();
+        if (!expr) return null;
+        if (expr.length > 50) return null; // guard
+        // Disallow consecutive operators except minus
+        if (/[*+/]{2,}/.test(expr)) return null;
+        // Basic sanity: must contain a digit
+        if (!/[0-9]/.test(expr)) return null;
+        // eslint-disable-next-line no-new-func
+        const result = Function(`"use strict"; return (${expr});`)();
+        if (Number.isFinite(result)) return String(result);
+        return null;
+      } catch { return null; }
+    };
+
+    const math = tryEvalMath(String(message));
+    const fallback = math !== null
+      ? `Result: ${math}`
+      : 'I could not generate a response right now. Please try again in a moment.';
     try {
       const userId = DEV_MODE ? (req.user?.userId || 'dev_user') : req.user?.userId;
       let thread = await Thread.findOne({ threadId, user: userId });
