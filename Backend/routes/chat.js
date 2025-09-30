@@ -124,7 +124,7 @@ router.post("/chat", async (req, res) => {
     // Always show details for debugging and add header for visibility
     res.setHeader('X-Error-Details', encodeURIComponent(err?.message || ''));
     return res.status(500).json({ 
-      error: "Error contacting Gemini API", 
+      error: "Error contacting AI provider", 
       details: err?.message,
       type: err?.constructor?.name,
       code: err?.code

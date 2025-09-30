@@ -13,39 +13,39 @@ const APIFREE_URL = process.env.APIFREE_URL ? process.env.APIFREE_URL.trim() : u
 export async function getGeminiReply(userInput) {
   // Prefer APIFREE if configured (no key required)
   if (APIFREE_URL) {
+    console.log("🆓 Using APIFREE provider:", APIFREE_URL);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 15000);
     try {
-      console.log("🆓 Using APIFREE provider:", APIFREE_URL);
-      const controller = new AbortController();
-      const timeout = setTimeout(() => controller.abort(), 15000);
       const response = await fetch(APIFREE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: String(userInput) }),
         signal: controller.signal
-      }).finally(() => clearTimeout(timeout));
+      });
       if (!response.ok) {
         const text = await response.text().catch(() => "");
         const err = new Error(`APIFREE error ${response.status}: ${text}`);
         err.status = response.status;
         throw err;
       }
-      // Try to parse JSON, fallback to text
-      let data;
       const textBody = await response.text();
+      let data;
       try { data = JSON.parse(textBody); } catch { /* keep undefined */ }
-      // Flexible extraction: support common shapes
       const possible = data?.reply || data?.message || data?.content || data?.response ||
         data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
       const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
-      if (resultText && resultText.trim().length > 0) return resultText;
-      return "No response";
+      return resultText && resultText.trim().length > 0 ? resultText : "No response";
     } catch (err) {
+      clearTimeout(timeout);
       if (err?.name === 'AbortError') {
-        console.warn("⏱️ APIFREE request timed out at 15s, falling back...");
-      } else {
-        console.warn("❌ APIFREE provider failed:", err?.message || err);
+        const timeoutErr = new Error("APIFREE timeout after 15s");
+        timeoutErr.code = 'ETIMEDOUT';
+        throw timeoutErr;
       }
-      // fall through to other providers
+      throw err;
+    } finally {
+      clearTimeout(timeout);
     }
   }
 
