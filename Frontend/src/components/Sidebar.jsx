@@ -24,7 +24,7 @@ function Sidebar() {
 
     const getAllThreads = async () => {
         try {
-            const apiUrl = getApiBase();
+            const apiUrl = getApiBase().replace(/\/+$/, '');
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 8000);
             const response = await fetch(`${apiUrl}/api/thread`, { headers: getAuthHeaders(), signal: controller.signal }).finally(() => clearTimeout(timeoutId));
@@ -104,7 +104,7 @@ function Sidebar() {
         } catch {}
 
         try {
-            const apiUrl = getApiBase();
+            const apiUrl = getApiBase().replace(/\/+$/, '');
             const controller = new AbortController();
             const timeoutId = setTimeout(() => controller.abort(), 8000);
             let response = await fetch(`${apiUrl}/api/thread/${newThreadId}`, { headers: getAuthHeaders(), signal: controller.signal }).finally(() => clearTimeout(timeoutId));
@@ -121,7 +121,7 @@ function Sidebar() {
 
     const deleteThread = async (threadId) => {
         try {
-            const apiUrl = getApiBase();
+            const apiUrl = getApiBase().replace(/\/+$/, '');
             let response = await fetch(`${apiUrl}/api/thread/${threadId}`, { method: "DELETE", headers: getAuthHeaders() });
             if (!response.ok) {
                 throw new Error("Backend not available");

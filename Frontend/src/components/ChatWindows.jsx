@@ -84,7 +84,7 @@ function ChatWindow() {
 
     try {
       const token = localStorage.getItem("token");
-      const apiUrl = getApiBase();
+      const apiUrl = getApiBase().replace(/\/+$/, '');
       const options = {
         method: "POST",
         headers: {
