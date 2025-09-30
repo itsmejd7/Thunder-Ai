@@ -30,6 +30,15 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
+// Explicit preflight handler for all routes
+app.options('*', cors({
+  origin: allowedOrigins,
+  credentials: true,
+  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
+  allowedHeaders: ['Content-Type','Authorization'],
+  optionsSuccessStatus: 204
+}));
+
 
 app.use(express.json());
 
@@ -46,6 +55,11 @@ app.use(apiLimiter);
 
 app.get("/", (req, res) => {
   res.json({ message: "Thunder-AI Backend is running!" });
+});
+
+// Lightweight ping for browser CORS/availability checks
+app.get("/api/ping", (req, res) => {
+  res.json({ ok: true, time: new Date().toISOString() });
 });
 
 // Test endpoint

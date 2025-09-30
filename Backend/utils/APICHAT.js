@@ -10,7 +10,7 @@ const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:f
 const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
 const APIFREE_URL = process.env.APIFREE_URL ? process.env.APIFREE_URL.trim() : undefined;
 const APIFREE_TIMEOUT_MS = Number(process.env.APIFREE_TIMEOUT_MS || 20000); // default 20s
-const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 1)); // default one retry
+const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 0)); // default no retries to avoid proxy timeouts
 
 export async function getGeminiReply(userInput) {
   // Prefer APIFREE if configured (no key required)
