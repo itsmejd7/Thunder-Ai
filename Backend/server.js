@@ -30,14 +30,7 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Explicit preflight handler for all routes
-app.options('*', cors({
-  origin: allowedOrigins,
-  credentials: true,
-  methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
-  allowedHeaders: ['Content-Type','Authorization'],
-  optionsSuccessStatus: 204
-}));
+// Note: CORS preflight is handled by the cors() middleware above for Express 5.
 
 
 app.use(express.json());
