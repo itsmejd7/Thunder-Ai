@@ -1,17 +1,15 @@
 import express from "express";
 import rateLimit from "express-rate-limit";
 import Thread from "../models/Thread.js";
-import { getGeminiReply, listAvailableModels } from "../utils/APICHAT.js";
+import { getAIReply } from "../utils/APICHAT.js";
 import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "changeme-super-secret";
 
-// Per-route limiter for chat endpoints
 const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
 
-// Auth middleware
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization;
   if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing token' });
@@ -24,11 +22,9 @@ function requireAuth(req, res, next) {
   }
 }
 
-// All routes below require authentication
 router.use(requireAuth);
 router.use(chatLimiter);
 
-// POST /chat/test (for testing)
 router.post("/test", async (req, res) => {
   try {
     const thread = new Thread({
@@ -43,7 +39,6 @@ router.post("/test", async (req, res) => {
   }
 });
 
-// GET all threads for the logged-in user
 router.get("/thread", async (req, res) => {
   try {
     const threads = await Thread.find({ user: req.user.userId }).sort({ updatedAt: -1 }).lean();
@@ -53,7 +48,6 @@ router.get("/thread", async (req, res) => {
   }
 });
 
-// GET specific thread messages (only if owned by user)
 router.get("/thread/:threadId", async (req, res) => {
   const { threadId } = req.params;
   try {
@@ -68,7 +62,6 @@ router.get("/thread/:threadId", async (req, res) => {
   }
 });
 
-// DELETE a thread (only if owned by user)
 router.delete("/thread/:threadId", async (req, res) => {
   const { threadId } = req.params;
   try {
@@ -83,7 +76,6 @@ router.delete("/thread/:threadId", async (req, res) => {
   }
 });
 
-// POST /chat (create or update thread, only for user)
 router.post("/chat", async (req, res) => {
   // Extend response timeout to align with APIFREE timeout + retry buffer
   req.setTimeout?.(30000);
@@ -109,17 +101,17 @@ router.post("/chat", async (req, res) => {
     } else {
       thread.messages.push({ role: "user", content: message });
     }
-    const assistantReply = await getGeminiReply(message);
+    const assistantReply = await getAIReply(message);
     thread.messages.push({ role: "assistant", content: assistantReply });
     thread.updatedAt = new Date();
     await thread.save();
     res.json({ reply: assistantReply });
   } catch (err) {
-    console.error("Gemini API call failed:", err?.message);
+    console.error("AI provider call failed:", err?.message);
     console.error("Full error object:", err);
     if (err?.response) {
-      console.error("Gemini API response status:", err.response.status);
-      console.error("Gemini API response data:", err.response.data);
+      console.error("Provider response status:", err.response.status);
+      console.error("Provider response data:", err.response.data);
     }
     // Always show details for debugging and add header for visibility
     res.setHeader('X-Error-Details', encodeURIComponent(err?.message || ''));
@@ -129,16 +121,6 @@ router.post("/chat", async (req, res) => {
       type: err?.constructor?.name,
       code: err?.code
     });
-  }
-});
-
-// GET /models - list available Gemini models for this API key (auth required)
-router.get("/models", async (req, res) => {
-  try {
-    const models = await listAvailableModels();
-    res.json(models);
-  } catch (err) {
-    res.status(500).json({ error: "Failed to list models", details: err.message });
   }
 });
 

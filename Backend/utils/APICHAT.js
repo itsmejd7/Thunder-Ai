@@ -1,27 +1,22 @@
 import dotenv from "dotenv";
-import { GoogleGenerativeAI } from "@google/generative-ai";
 import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
 import { AzureKeyCredential } from "@azure/core-auth";
 
-dotenv.config(); 
+dotenv.config();
 
-// Provider configuration (trim to avoid accidental whitespace)
-const API_KEY = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.trim() : undefined;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
 const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
 const APIFREE_URL = process.env.APIFREE_URL ? process.env.APIFREE_URL.trim() : undefined;
-const APIFREE_TIMEOUT_MS = Number(process.env.APIFREE_TIMEOUT_MS || 20000); // default 20s
-const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 0)); // default no retries to avoid proxy timeouts
+const APIFREE_TIMEOUT_MS = Number(process.env.APIFREE_TIMEOUT_MS || 20000);
+const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 0));
 const GITHUB_TOKEN = process.env.GITHUB_TOKEN ? process.env.GITHUB_TOKEN.trim() : undefined;
 const GITHUB_MODELS_ENDPOINT = process.env.GITHUB_MODELS_ENDPOINT || "https://models.github.ai/inference";
 const GITHUB_MODEL = process.env.GITHUB_MODEL || "deepseek/DeepSeek-V3-0324";
 
-export async function getGeminiReply(userInput) {
-  // 1) Prefer GitHub Models (DeepSeek V3) if configured
+export async function getAIReply(userInput) {
   if (GITHUB_TOKEN) {
     try {
-      console.log("🐙 Using GitHub Models:", GITHUB_MODEL);
       const client = ModelClient(GITHUB_MODELS_ENDPOINT, new AzureKeyCredential(GITHUB_TOKEN));
       const response = await client.path("/chat/completions").post({
         body: {
@@ -41,16 +36,12 @@ export async function getGeminiReply(userInput) {
         throw err;
       }
       const content = response.body?.choices?.[0]?.message?.content || response.body?.choices?.[0]?.text || "";
-      return typeof content === 'string' && content.trim().length > 0 ? content : "No response";
-    } catch (err) {
-      console.error("❌ GitHub Models request failed:", err?.message || err);
-      // If GitHub fails, continue to next providers (OpenRouter, APIFREE, Gemini)
-    }
+      if (typeof content === "string" && content.trim().length > 0) return content;
+      return "No response";
+    } catch {}
   }
 
-  // Prefer OpenRouter when configured; only use APIFREE if OpenRouter is not set
   if (APIFREE_URL && !OPENROUTER_API_KEY) {
-    console.log("🆓 Using APIFREE provider:", APIFREE_URL);
     let attempt = 0;
     while (attempt <= APIFREE_RETRIES) {
       const controller = new AbortController();
@@ -66,9 +57,7 @@ export async function getGeminiReply(userInput) {
           const text = await response.text().catch(() => "");
           const err = new Error(`APIFREE error ${response.status}: ${text}`);
           err.status = response.status;
-          // Retry on 502/503 once
           if ((err.status === 502 || err.status === 503) && attempt < APIFREE_RETRIES) {
-            console.warn(`⚠️ APIFREE ${err.status}. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
             attempt += 1;
             await new Promise(r => setTimeout(r, 800));
             continue;
@@ -77,14 +66,12 @@ export async function getGeminiReply(userInput) {
         }
         const textBody = await response.text();
         let data;
-        try { data = JSON.parse(textBody); } catch { /* keep undefined */ }
-        const possible = data?.reply || data?.message || data?.content || data?.response ||
-          data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
+        try { data = JSON.parse(textBody); } catch {}
+        const possible = data?.reply || data?.message || data?.content || data?.response || data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
         const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
         return resultText && resultText.trim().length > 0 ? resultText : "No response";
       } catch (err) {
         if (err?.name === 'AbortError') {
-          console.warn(`⏱️ APIFREE timeout after ${APIFREE_TIMEOUT_MS}ms`);
           if (attempt < APIFREE_RETRIES) {
             attempt += 1;
             await new Promise(r => setTimeout(r, 500));
@@ -94,9 +81,7 @@ export async function getGeminiReply(userInput) {
           timeoutErr.code = 'ETIMEDOUT';
           throw timeoutErr;
         }
-        // Non-timeout error. Only retry if configured and likely transient
         if ((err?.status === 502 || err?.status === 503 || err?.code === 'ECONNRESET') && attempt < APIFREE_RETRIES) {
-          console.warn(`⚠️ APIFREE transient error. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
           attempt += 1;
           await new Promise(r => setTimeout(r, 800));
           continue;
@@ -108,7 +93,6 @@ export async function getGeminiReply(userInput) {
     }
   }
 
-  // If OpenRouter is configured, use it
   if (OPENROUTER_API_KEY) {
     let lastOpenRouterError;
     const doRequest = async (model) => {
@@ -142,33 +126,25 @@ export async function getGeminiReply(userInput) {
     const modelsToTry = [OPENROUTER_MODEL, OPENROUTER_FALLBACK_MODEL];
     for (let i = 0; i < modelsToTry.length; i += 1) {
       const model = modelsToTry[i];
-      console.log("🤖 Using OpenRouter model:", model);
       let attempt = 0;
       const maxAttempts = 3;
       while (attempt < maxAttempts) {
         try {
           return await doRequest(model);
         } catch (err) {
-          // Retry on 429 with exponential backoff
           if (err.status === 429 && attempt < maxAttempts - 1) {
             const delayMs = 500 * Math.pow(2, attempt);
-            console.warn(`⚠️ OpenRouter 429. Retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxAttempts})`);
             await new Promise(r => setTimeout(r, delayMs));
             attempt += 1;
             continue;
           }
-          console.error("❌ OpenRouter request failed:", err.message);
           lastOpenRouterError = err;
-          // Break to next model if 429 persists or other errors
           break;
         }
       }
     }
     const failureMessage = "All OpenRouter models failed (rate-limited or unavailable). Please try again later.";
-    console.warn("⚠️", failureMessage);
-    // Try APIFREE as a fallback if configured
     if (APIFREE_URL) {
-      console.warn("↩️ Falling back to APIFREE after OpenRouter failure...");
       let attempt = 0;
       while (attempt <= APIFREE_RETRIES) {
         const controller = new AbortController();
@@ -185,7 +161,6 @@ export async function getGeminiReply(userInput) {
             const err = new Error(`APIFREE error ${response.status}: ${text}`);
             err.status = response.status;
             if ((err.status === 502 || err.status === 503) && attempt < APIFREE_RETRIES) {
-              console.warn(`⚠️ APIFREE ${err.status}. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
               attempt += 1;
               await new Promise(r => setTimeout(r, 800));
               continue;
@@ -194,14 +169,12 @@ export async function getGeminiReply(userInput) {
           }
           const textBody = await response.text();
           let data;
-          try { data = JSON.parse(textBody); } catch { /* keep undefined */ }
-          const possible = data?.reply || data?.message || data?.content || data?.response ||
-            data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
+          try { data = JSON.parse(textBody); } catch {}
+          const possible = data?.reply || data?.message || data?.content || data?.response || data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
           const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
           return resultText && resultText.trim().length > 0 ? resultText : "No response";
         } catch (err) {
           if (err?.name === 'AbortError') {
-            console.warn(`⏱️ APIFREE timeout after ${APIFREE_TIMEOUT_MS}ms`);
             if (attempt < APIFREE_RETRIES) {
               attempt += 1;
               await new Promise(r => setTimeout(r, 500));
@@ -212,197 +185,62 @@ export async function getGeminiReply(userInput) {
             throw timeoutErr;
           }
           if ((err?.status === 502 || err?.status === 503 || err?.code === 'ECONNRESET') && attempt < APIFREE_RETRIES) {
-            console.warn(`⚠️ APIFREE transient error. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
             attempt += 1;
             await new Promise(r => setTimeout(r, 800));
             continue;
           }
-          // If APIFREE also fails, break to optional Gemini fallback below
-          console.error("❌ APIFREE fallback failed:", err.message || err);
           break;
         } finally {
           clearTimeout(timeout);
         }
       }
     }
-    // If no APIFREE or it failed, optionally fall through to Gemini (if configured)
-    if (!API_KEY) {
-      const error = new Error(failureMessage);
-      error.code = lastOpenRouterError?.code;
-      throw error;
-    }
+    const error = new Error(failureMessage);
+    error.code = undefined;
+    throw error;
   }
 
-  // Otherwise use Gemini API
-  // Step 1: Check API key
-  console.log("🔑 Checking API key...");
-  console.log("🔑 API Key present:", Boolean(API_KEY));
-  
-  if (!API_KEY) {
-    console.error("❌ No Gemini API key found in environment variables");
-    throw new Error("No Gemini API key found. Please add GEMINI_API_KEY to your .env file");
-  }
-
-  // Basic format check without logging key contents
-  if (!API_KEY.startsWith('AIza') || API_KEY.length < 35) {
-    console.error("❌ API key format looks invalid. Should start with 'AIza' and be ~39 characters");
-    throw new Error("Invalid API key format. Please check your GEMINI_API_KEY");
-  }
-
-  try {
-    console.log("🤖 Initializing Google AI...");
-    
-    // Initialize the Google AI SDK
-    const genAI = new GoogleGenerativeAI({ apiKey: API_KEY, apiVersion: 'v1' });
-    
-    // Use model from environment if provided; default to a broadly supported model
-    const configuredModel = process.env.GEMINI_MODEL || "gemini-1.0-flash-lite";
-    console.log("🤖 Using model:", configuredModel);
-    const model = genAI.getGenerativeModel({ model: configuredModel });
-    
-    console.log("🤖 Sending request to Gemini API...");
-    
-    // Generate content
-    const result = await model.generateContent(userInput);
-    const response = await result.response;
-    
-    // Handle structured response properly
-    let text = "";
-    try {
-      // Try to get text from response parts
-      if (response.candidates && response.candidates[0] && response.candidates[0].content) {
-        const content = response.candidates[0].content;
-        if (content.parts && content.parts.length > 0) {
-          text = content.parts.map(part => part.text || "").join("");
-        } else {
-          text = content.text || "";
-        }
-      } else {
-        // Fallback to direct text method
-        text = await response.text();
-      }
-    } catch (textError) {
-      console.log("⚠️ Error getting text, trying alternative method");
-      text = await response.text();
-    }
-    
-    // Debug: Log the type and content
-    console.log("🔍 Response type:", typeof text);
-    console.log("🔍 Response content preview:", text ? text.substring(0, 200) : "null/undefined");
-    
-    // Ensure text is always a string
-    if (!text || typeof text !== 'string') {
-      console.log("⚠️ Converting non-string response to string");
-      if (text === null || text === undefined) {
-        text = "No response received from AI";
-      } else if (typeof text === 'object') {
-        text = JSON.stringify(text, null, 2);
-      } else {
-        text = String(text);
-      }
-    }
-    
-    console.log("✅ Gemini API response received");
-    console.log("📝 Gemini reply length:", text.length, "characters");
-    
-    return text;
-
-  } catch (err) {
-    console.error("❌ Gemini API request failed:", err.message);
-    if (err?.response) {
-      console.error("❌ Gemini status:", err.response.status);
-      console.error("❌ Gemini data:", err.response.data);
-    }
-    // Create a clearer error message
-    const status = err?.response?.status;
-    let reason = err?.message || "Unknown Gemini error";
-    if (status === 401 || /API key not valid|unauthorized/i.test(reason)) {
-      reason = "Gemini auth failed (401). Check GEMINI_API_KEY and project permissions/billing.";
-    } else if (status === 403 || /permission|forbidden/i.test(reason)) {
-      reason = "Gemini permission denied (403). Enable API access/billing for your key.";
-    } else if (status === 404 || /not found|model|unsupported/i.test(reason)) {
-      reason = "Gemini model not found/unsupported (404). Try a supported model for your key.";
-    } else if (status === 429 || /quota|rate|exceed/i.test(reason)) {
-      reason = "Gemini quota exceeded (429). Reduce requests or increase quota/billing.";
-    } else if (/ENOTFOUND|ECONNREFUSED|ETIMEDOUT|network/i.test(reason)) {
-      reason = "Network error reaching Gemini. Check server egress and DNS.";
-    }
-    
-    // If gemini-1.5-pro fails, try gemini-1.5-flash
-    if (err.message.includes("not found") || err.message.includes("404") || err.message.includes("not supported")) {
-      console.error("❌ Model not found. Trying gemini-1.5-flash-latest...");
+  if (APIFREE_URL) {
+    let attempt = 0;
+    while (attempt <= APIFREE_RETRIES) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), APIFREE_TIMEOUT_MS);
       try {
-        const genAI = new GoogleGenerativeAI({ apiKey: API_KEY, apiVersion: 'v1' });
-        const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
-        const result = await model.generateContent(userInput);
-        const response = await result.response;
-        
-        // Handle structured response properly
-        let text = "";
-        try {
-          // Try to get text from response parts
-          if (response.candidates && response.candidates[0] && response.candidates[0].content) {
-            const content = response.candidates[0].content;
-            if (content.parts && content.parts.length > 0) {
-              text = content.parts.map(part => part.text || "").join("");
-            } else {
-              text = content.text || "";
-            }
-          } else {
-            // Fallback to direct text method
-            text = await response.text();
-          }
-        } catch (textError) {
-          console.log("⚠️ Error getting text, trying alternative method");
-          text = await response.text();
+        const response = await fetch(APIFREE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: String(userInput) }),
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          const err = new Error(`APIFREE error ${response.status}: ${text}`);
+          err.status = response.status;
+          throw err;
         }
-        
-        // Debug: Log the type and content
-        console.log("🔍 Fallback response type:", typeof text);
-        console.log("🔍 Fallback response content preview:", text ? text.substring(0, 200) : "null/undefined");
-        
-        // Ensure text is always a string
-        if (!text || typeof text !== 'string') {
-          console.log("⚠️ Converting non-string fallback response to string");
-          if (text === null || text === undefined) {
-            text = "No response received from AI";
-          } else if (typeof text === 'object') {
-            text = JSON.stringify(text, null, 2);
-          } else {
-            text = String(text);
+        const textBody = await response.text();
+        let data;
+        try { data = JSON.parse(textBody); } catch {}
+        const possible = data?.reply || data?.message || data?.content || data?.response || data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
+        const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
+        return resultText && resultText.trim().length > 0 ? resultText : "No response";
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          if (attempt < APIFREE_RETRIES) {
+            attempt += 1;
+            await new Promise(r => setTimeout(r, 500));
+            continue;
           }
+          const timeoutErr = new Error(`APIFREE timeout after ${APIFREE_TIMEOUT_MS}ms`);
+          timeoutErr.code = 'ETIMEDOUT';
+          throw timeoutErr;
         }
-        
-        console.log("✅ Gemini API response received with gemini-1.5-flash");
-        return text;
-      } catch (proErr) {
-        console.error("❌ gemini-1.5-flash also failed:", proErr.message);
-        // Re-throw with mapped reason for upstream handler
-        const wrapped = new Error(reason);
-        wrapped.code = proErr?.code;
-        wrapped.cause = proErr;
-        throw wrapped;
+        throw err;
+      } finally {
+        clearTimeout(timeout);
       }
-    } else if (err.message.includes("API key not valid")) {
-      console.error("❌ Your API key is being rejected. Please check GEMINI_API_KEY and billing.");
     }
-    // Throw mapped reason
-    const wrapped = new Error(reason);
-    wrapped.code = err?.code;
-    wrapped.cause = err;
-    throw wrapped;
   }
-} 
 
-// List available models for the configured API key (uses v1 REST)
-export async function listAvailableModels() {
-  const key = process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.trim() : undefined;
-  if (!key) throw new Error("GEMINI_API_KEY missing");
-  const url = `https://generativelanguage.googleapis.com/v1/models?key=${key}`;
-  const res = await fetch(url);
-  if (!res.ok) {
-    const msg = await res.text();
-    throw new Error(`ListModels failed: ${res.status} ${res.statusText} - ${msg}`);
-  }
-  return await res.json();
+  throw new Error("No AI provider configured. Set GITHUB_TOKEN, OPENROUTER_API_KEY, or APIFREE_URL.");
 }

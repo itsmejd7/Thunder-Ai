@@ -1,6 +1,3 @@
-// Test script for backend endpoints
-// Run with: node test-endpoints.js
-
 const BASE_URL = 'https://thunder-ai-backend.onrender.com';
 
 async function testEndpoints() {

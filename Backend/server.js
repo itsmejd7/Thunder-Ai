@@ -3,7 +3,7 @@ import cors from "cors";
 import rateLimit from "express-rate-limit";
 import dotenv from "dotenv";
 import mongoose from "mongoose";
-import { getGeminiReply } from "./utils/APICHAT.js";
+import { getAIReply } from "./utils/APICHAT.js";
 import chatRoutes from "./routes/chat.js";
 import authRoutes from "./routes/auth.js";
 
@@ -30,12 +30,8 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Note: CORS preflight is handled by the cors() middleware above for Express 5.
-
-
 app.use(express.json());
 
-// Global basic rate limiting
 const apiLimiter = rateLimit({
   windowMs: 60 * 1000,
   max: 60,
@@ -50,33 +46,8 @@ app.get("/", (req, res) => {
   res.json({ message: "Thunder-AI Backend is running!" });
 });
 
-// Lightweight ping for browser CORS/availability checks
 app.get("/api/ping", (req, res) => {
   res.json({ ok: true, time: new Date().toISOString() });
-});
-
-// Test endpoint
-app.get("/test", (req, res) => {
-  res.json({ 
-    message: "Backend is working!",
-    timestamp: new Date().toISOString(),
-    env: process.env.NODE_ENV || 'development',
-    model: process.env.GEMINI_MODEL || 'gemini-1.0-pro'
-  });
-});
-
-// Debug endpoint to check environment
-app.get("/debug", (req, res) => {
-  res.json({
-    hasGeminiKey: !!process.env.GEMINI_API_KEY,
-    keyLength: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.length : 0,
-    keyPrefix: process.env.GEMINI_API_KEY ? process.env.GEMINI_API_KEY.substring(0, 10) + "..." : "NOT_FOUND",
-    model: process.env.GEMINI_MODEL || 'gemini-1.0-pro',
-    openrouterConfigured: !!process.env.OPENROUTER_API_KEY,
-    openrouterModel: process.env.OPENROUTER_MODEL || 'deepseek/deepseek-r1:free',
-    exposeErrors: process.env.EXPOSE_ERRORS,
-    nodeEnv: process.env.NODE_ENV
-  });
 });
 
 app.use("/api/auth", authRoutes);
@@ -96,9 +67,7 @@ const connectdb = async () => {
   }
 };
 
-// Start server first, then try to connect to database
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  // Try to connect to database after server starts
   connectdb();
 });
