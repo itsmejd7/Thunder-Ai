@@ -87,18 +87,22 @@ function ChatWindow() {
       const response = await fetch(`${apiUrl}/api/chat`, options);
       if (response.ok) {
         const res = await response.json();
+        const content = res?.reply || '';
+        const modelError = res?.error || '';
         setPrevChats((prev) => {
           const withoutPending = prev.filter(m => !m.pending);
-          const updatedChats = [...withoutPending, { role: 'assistant', content: res.reply }];
+          const finalContent = content?.trim() ? content : (modelError?.trim() ? `Model error: ${modelError}` : 'Sorry, I could not generate a response. Please try again.');
+          const updatedChats = [...withoutPending, { role: 'assistant', content: finalContent }];
           try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
           return updatedChats;
         });
-        setReply(res.reply);
+        setReply(content);
       } else {
-        // Replace placeholder with a soft failure note
+        // Replace placeholder with backend error body
+        const raw = await response.text().catch(() => '');
         setPrevChats((prev) => {
           const withoutPending = prev.filter(m => !m.pending);
-          const updatedChats = [...withoutPending, { role: 'assistant', content: 'Sorry, I could not generate a response. Please try again.' }];
+          const updatedChats = [...withoutPending, { role: 'assistant', content: `HTTP ${response.status}: ${raw?.slice(0, 200)}` }];
           try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
           return updatedChats;
         });
