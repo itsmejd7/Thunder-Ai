@@ -8,6 +8,7 @@ import User from "../models/User.js";
 const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "changeme-super-secret";
 const DEV_MODE = !process.env.MONGODB_URI;
+const CHAT_TIMEOUT_MS = Math.max(3000, Number(process.env.CHAT_TIMEOUT_MS || 12000));
 
 const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
 
@@ -81,7 +82,7 @@ router.delete("/thread/:threadId", async (req, res) => {
 
 router.post("/chat", async (req, res) => {
   // Extend response timeout to align with APIFREE timeout + retry buffer
-  req.setTimeout?.(30000);
+  req.setTimeout?.(CHAT_TIMEOUT_MS + 2000);
   const { threadId, message } = req.body || {};
   if (!threadId || !message) {
     return res.status(400).json({ error: "Missing required fields" });
@@ -105,7 +106,10 @@ router.post("/chat", async (req, res) => {
     } else {
       thread.messages.push({ role: "user", content: message });
     }
-    const assistantReply = await getAIReply(message);
+    const assistantReply = await Promise.race([
+      getAIReply(message),
+      new Promise((_, reject) => setTimeout(() => reject(new Error(`CHAT_TIMEOUT after ${CHAT_TIMEOUT_MS}ms`)), CHAT_TIMEOUT_MS))
+    ]);
     thread.messages.push({ role: "assistant", content: assistantReply });
     thread.updatedAt = new Date();
     if (!DEV_MODE) {
