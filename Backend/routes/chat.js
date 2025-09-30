@@ -152,7 +152,7 @@ router.post("/chat", async (req, res) => {
         await thread.save();
       }
     } catch {}
-    return res.json({ reply: fallback });
+    return res.json({ reply: fallback, error: err?.message || 'provider_failed' });
   }
 });
 
