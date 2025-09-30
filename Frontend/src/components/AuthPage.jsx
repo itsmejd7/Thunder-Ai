@@ -30,13 +30,19 @@ export default function AuthPage({ mode = 'login' }) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${getApiBase()}/api/auth/${pageMode}`, {
+      const apiBase = getApiBase().replace(/\/+$/, '');
+      const url = `${apiBase}/api/auth/${pageMode}`;
+      const res = await fetch(url, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
       });
-      const data = await res.json();
-      if (!res.ok) throw new Error(data.error || 'Auth failed');
+      const raw = await res.text();
+      let data;
+      try { data = JSON.parse(raw); } catch {
+        throw new Error(`Unexpected response (${res.status}). ${raw?.slice(0,120)}`);
+      }
+      if (!res.ok) throw new Error(data.error || `Auth failed (${res.status})`);
       localStorage.setItem('token', data.token);
       setAuth(true);
       navigate('/');
