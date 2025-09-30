@@ -12,6 +12,7 @@ const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta
 export async function getGeminiReply(userInput) {
   // If OpenRouter is configured, use it
   if (OPENROUTER_API_KEY) {
+    let lastOpenRouterError;
     const doRequest = async (model) => {
       const response = await fetch("https://openrouter.ai/api/v1/chat/completions", {
         method: "POST",
@@ -59,12 +60,21 @@ export async function getGeminiReply(userInput) {
             continue;
           }
           console.error("❌ OpenRouter request failed:", err.message);
+          lastOpenRouterError = err;
           // Break to next model if 429 persists or other errors
           break;
         }
       }
     }
-    throw new Error("All OpenRouter models failed (rate-limited or unavailable). Please try again later.");
+    const failureMessage = "All OpenRouter models failed (rate-limited or unavailable). Please try again later.";
+    console.warn("⚠️", failureMessage);
+    // If no Gemini API key is configured, we cannot fallback – throw immediately
+    if (!API_KEY) {
+      const error = new Error(failureMessage);
+      error.code = lastOpenRouterError?.code;
+      throw error;
+    }
+    // Otherwise, fall through to Gemini section below
   }
 
   // Otherwise use Gemini API

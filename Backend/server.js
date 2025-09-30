@@ -13,7 +13,7 @@ const app = express();
 const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
 
-// Allow multiple origins for CORS
+
 const allowedOrigins = [
   'https://thunder-ai-frontend.vercel.app',
   'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app',
@@ -30,7 +30,6 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Note: cors middleware above will handle preflight automatically; no explicit '*' route (Express 5)
 
 app.use(express.json());
 
@@ -44,7 +43,7 @@ const apiLimiter = rateLimit({
 });
 app.use(apiLimiter);
 
-// Health check endpoint
+
 app.get("/", (req, res) => {
   res.json({ message: "Thunder-AI Backend is running!" });
 });
