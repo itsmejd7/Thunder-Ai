@@ -20,7 +20,7 @@ export async function getGeminiReply(userInput) {
       const response = await fetch(APIFREE_URL, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ prompt: String(userInput) }),
+        body: JSON.stringify({ message: String(userInput) }),
         signal: controller.signal
       });
       if (!response.ok) {
