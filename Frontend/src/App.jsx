@@ -72,7 +72,7 @@ function App() {
                   </div>
 
                   
-                  <div className="flex-1 flex flex-col min-h-screen bg-[#eaf6fd]">
+                  <div className="flex-1 flex flex-col min-h-screen bg-[#eaf6fd] main-content-mobile">
                     <ChatWindow />
                   </div>
                 </div>

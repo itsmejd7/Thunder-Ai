@@ -16,12 +16,13 @@ function Sidebar() {
       return token ? { Authorization: `Bearer ${token}` } : {};
     };
 
-    // Fetch all chat threads from the backend API
+    // Fetch all chat threads from the backend API (with timeout)
     const getAllThreads = async () => {
         try {
-            // Try the main backend endpoint
             const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
-            const response = await fetch(`${apiUrl}/api/thread`, { headers: getAuthHeaders() });
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            const response = await fetch(`${apiUrl}/api/thread`, { headers: getAuthHeaders(), signal: controller.signal }).finally(() => clearTimeout(timeoutId));
             const res = await response.json();
             console.log("Threads response:", res);
             
@@ -60,10 +61,10 @@ function Sidebar() {
         }
     };
 
-    // useEffect runs getAllThreads when the component mounts or currThreadId changes
+    // Fetch threads on mount; refresh via custom event when needed
     useEffect(() => {
         getAllThreads();
-    }, [currThreadId])
+    }, [])
 
     useEffect(() => {
       const handler = () => getAllThreads();
@@ -106,40 +107,31 @@ function Sidebar() {
 
     // Change to a different chat thread
     const changeThread = async (newThreadId) => {
-        setCurrThreadId(newThreadId); // Set the selected thread as current
-
+        setCurrThreadId(newThreadId);
+        // Optimistically load from local storage for instant render
         try {
-            // Try to fetch the thread's chat history from the backend
+            const localChats = JSON.parse(localStorage.getItem(`chat_${newThreadId}`) || '[]');
+            setPrevChats(localChats);
+            setNewChat(false);
+            setReply(null);
+        } catch {}
+
+        // Fetch from backend with timeout and replace if succeeds
+        try {
             const apiUrl = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
-            let response = await fetch(`${apiUrl}/api/thread/${newThreadId}`, { headers: getAuthHeaders() });
-            if (!response.ok) {
-                throw new Error("Backend not available");
-            }
-            const res = await response.json();
-            console.log("Thread history:", res);
-            setPrevChats(res); // Set previous chats for this thread
-            setNewChat(false); // Not a new chat anymore
-            setReply(null); // Clear reply
-            
-            // Close sidebar on mobile after selecting a thread
-            setSidebarOpen(false);
-        } catch(err) {
-            console.log("Backend not available, using local storage:", err);
-            // Use local storage for chat history
-            try {
-                const localChats = JSON.parse(localStorage.getItem(`chat_${newThreadId}`) || '[]');
-                setPrevChats(localChats);
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 8000);
+            let response = await fetch(`${apiUrl}/api/thread/${newThreadId}`, { headers: getAuthHeaders(), signal: controller.signal }).finally(() => clearTimeout(timeoutId));
+            if (response.ok) {
+                const res = await response.json();
+                setPrevChats(Array.isArray(res) ? res : []);
                 setNewChat(false);
                 setReply(null);
-                setSidebarOpen(false);
-            } catch (localErr) {
-                console.log("Local storage error:", localErr);
-                setPrevChats([]);
-                setNewChat(false);
-                setReply(null);
-                setSidebarOpen(false);
             }
-        }
+        } catch {}
+
+        // Close sidebar on mobile after selecting a thread
+        setSidebarOpen(false);
     }   
 
     // Delete a chat thread
@@ -200,7 +192,7 @@ function Sidebar() {
 
     // The UI for the sidebar
     return (
-        <aside className="sidebar-mobile bg-white text-blue-900 h-screen w-[270px] lg:w-[270px] flex-col border-r border-blue-200 shadow-xl rounded-tr-2xl rounded-br-2xl lg:rounded-none">
+        <aside className="bg-white text-blue-900 h-screen w-[270px] lg:w-[270px] flex-col border-r border-blue-200 shadow-xl rounded-tr-2xl rounded-br-2xl lg:rounded-none">
 
             {/* Top: New Chat Button and Close Button (Mobile) */}
             <div className="p-4 border-b border-blue-100 bg-blue-50 rounded-tr-2xl lg:rounded-none">
