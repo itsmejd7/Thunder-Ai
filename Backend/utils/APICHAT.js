@@ -9,43 +9,67 @@ const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUT
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
 const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
 const APIFREE_URL = process.env.APIFREE_URL ? process.env.APIFREE_URL.trim() : undefined;
+const APIFREE_TIMEOUT_MS = Number(process.env.APIFREE_TIMEOUT_MS || 20000); // default 20s
+const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 1)); // default one retry
 
 export async function getGeminiReply(userInput) {
   // Prefer APIFREE if configured (no key required)
   if (APIFREE_URL) {
     console.log("🆓 Using APIFREE provider:", APIFREE_URL);
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 15000);
-    try {
-      const response = await fetch(APIFREE_URL, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: String(userInput) }),
-        signal: controller.signal
-      });
-      if (!response.ok) {
-        const text = await response.text().catch(() => "");
-        const err = new Error(`APIFREE error ${response.status}: ${text}`);
-        err.status = response.status;
+    let attempt = 0;
+    while (attempt <= APIFREE_RETRIES) {
+      const controller = new AbortController();
+      const timeout = setTimeout(() => controller.abort(), APIFREE_TIMEOUT_MS);
+      try {
+        const response = await fetch(APIFREE_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ message: String(userInput) }),
+          signal: controller.signal
+        });
+        if (!response.ok) {
+          const text = await response.text().catch(() => "");
+          const err = new Error(`APIFREE error ${response.status}: ${text}`);
+          err.status = response.status;
+          // Retry on 502/503 once
+          if ((err.status === 502 || err.status === 503) && attempt < APIFREE_RETRIES) {
+            console.warn(`⚠️ APIFREE ${err.status}. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
+            attempt += 1;
+            await new Promise(r => setTimeout(r, 800));
+            continue;
+          }
+          throw err;
+        }
+        const textBody = await response.text();
+        let data;
+        try { data = JSON.parse(textBody); } catch { /* keep undefined */ }
+        const possible = data?.reply || data?.message || data?.content || data?.response ||
+          data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
+        const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
+        return resultText && resultText.trim().length > 0 ? resultText : "No response";
+      } catch (err) {
+        if (err?.name === 'AbortError') {
+          console.warn(`⏱️ APIFREE timeout after ${APIFREE_TIMEOUT_MS}ms`);
+          if (attempt < APIFREE_RETRIES) {
+            attempt += 1;
+            await new Promise(r => setTimeout(r, 500));
+            continue;
+          }
+          const timeoutErr = new Error(`APIFREE timeout after ${APIFREE_TIMEOUT_MS}ms`);
+          timeoutErr.code = 'ETIMEDOUT';
+          throw timeoutErr;
+        }
+        // Non-timeout error. Only retry if configured and likely transient
+        if ((err?.status === 502 || err?.status === 503 || err?.code === 'ECONNRESET') && attempt < APIFREE_RETRIES) {
+          console.warn(`⚠️ APIFREE transient error. Retrying... (${attempt + 1}/${APIFREE_RETRIES})`);
+          attempt += 1;
+          await new Promise(r => setTimeout(r, 800));
+          continue;
+        }
         throw err;
+      } finally {
+        clearTimeout(timeout);
       }
-      const textBody = await response.text();
-      let data;
-      try { data = JSON.parse(textBody); } catch { /* keep undefined */ }
-      const possible = data?.reply || data?.message || data?.content || data?.response ||
-        data?.choices?.[0]?.message?.content || data?.choices?.[0]?.text || textBody;
-      const resultText = typeof possible === 'string' ? possible : JSON.stringify(possible);
-      return resultText && resultText.trim().length > 0 ? resultText : "No response";
-    } catch (err) {
-      clearTimeout(timeout);
-      if (err?.name === 'AbortError') {
-        const timeoutErr = new Error("APIFREE timeout after 15s");
-        timeoutErr.code = 'ETIMEDOUT';
-        throw timeoutErr;
-      }
-      throw err;
-    } finally {
-      clearTimeout(timeout);
     }
   }
 

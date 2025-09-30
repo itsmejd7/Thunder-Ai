@@ -85,8 +85,8 @@ router.delete("/thread/:threadId", async (req, res) => {
 
 // POST /chat (create or update thread, only for user)
 router.post("/chat", async (req, res) => {
-  // Extend response timeout to 20s to accommodate slower upstreams like APIFREE
-  req.setTimeout?.(20000);
+  // Extend response timeout to align with APIFREE timeout + retry buffer
+  req.setTimeout?.(30000);
   const { threadId, message } = req.body || {};
   if (!threadId || !message) {
     return res.status(400).json({ error: "Missing required fields" });
