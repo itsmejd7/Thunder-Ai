@@ -13,8 +13,8 @@ const APIFREE_TIMEOUT_MS = Number(process.env.APIFREE_TIMEOUT_MS || 20000); // d
 const APIFREE_RETRIES = Math.max(0, Number(process.env.APIFREE_RETRIES || 0)); // default no retries to avoid proxy timeouts
 
 export async function getGeminiReply(userInput) {
-  // Prefer APIFREE if configured (no key required)
-  if (APIFREE_URL) {
+  // Prefer OpenRouter when configured; only use APIFREE if OpenRouter is not set
+  if (APIFREE_URL && !OPENROUTER_API_KEY) {
     console.log("🆓 Using APIFREE provider:", APIFREE_URL);
     let attempt = 0;
     while (attempt <= APIFREE_RETRIES) {
