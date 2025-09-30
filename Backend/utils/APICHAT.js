@@ -2,6 +2,8 @@ import dotenv from "dotenv";
 
 dotenv.config();
 
+const GOOGLE_API_KEY = process.env.GOOGLE_API_KEY ? process.env.GOOGLE_API_KEY.trim() : undefined;
+const GOOGLE_MODEL = process.env.GOOGLE_MODEL || "models/gemini-2.5-flash:generateContent";
 const OPENROUTER_API_KEY = process.env.OPENROUTER_API_KEY ? process.env.OPENROUTER_API_KEY.trim() : undefined;
 const OPENROUTER_MODEL = process.env.OPENROUTER_MODEL || "deepseek/deepseek-r1:free";
 const OPENROUTER_FALLBACK_MODEL = process.env.OPENROUTER_FALLBACK_MODEL || "meta-llama/llama-3.1-8b-instruct:free";
@@ -13,6 +15,31 @@ const GITHUB_MODELS_ENDPOINT = process.env.GITHUB_MODELS_ENDPOINT || "https://mo
 const GITHUB_MODEL = process.env.GITHUB_MODEL || "deepseek/DeepSeek-V3-0324";
 
 export async function getAIReply(userInput) {
+  // 0) Prefer Google Gemini first if key provided
+  if (GOOGLE_API_KEY) {
+    try {
+      const endpoint = `https://generativelanguage.googleapis.com/v1beta/${GOOGLE_MODEL}?key=${encodeURIComponent(GOOGLE_API_KEY)}`;
+      const response = await fetch(endpoint, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [
+            { role: 'user', parts: [{ text: String(userInput) }] }
+          ]
+        })
+      });
+      if (!response.ok) {
+        const errText = await response.text();
+        const error = new Error(`Gemini error ${response.status}: ${errText}`);
+        error.status = response.status;
+        throw error;
+      }
+      const data = await response.json();
+      const text = data?.candidates?.[0]?.content?.parts?.map(p => p.text).join('') || '';
+      if (typeof text === 'string' && text.trim()) return text;
+    } catch {}
+  }
+
   if (GITHUB_TOKEN) {
     try {
       // Lazy-load Azure SDKs only if configured, so local runs don't require them
