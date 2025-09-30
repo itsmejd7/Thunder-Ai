@@ -65,22 +65,9 @@ function ChatWindow() {
       return updatedChats;
     });
 
-    setTimeout(() => {
-      const aiResponse = `Hello! I'm Thunder-AI. You said: "${userMessage}". This is a simulated response while we set up the backend connection.`;
-
-      setPrevChats((prev) => {
-        const updatedChats = [...prev, { role: "assistant", content: aiResponse }];
-        try {
-          localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats));
-        } catch (err) {
-          console.log("Error saving to local storage:", err);
-        }
-        return updatedChats;
-      });
-
-      setReply(aiResponse);
-      setLoading(false);
-    }, 1000);
+    // Show a transient "generating" placeholder bubble instead of a final message
+    const placeholderId = `pending_${Date.now()}`;
+    setPrevChats((prev) => [...prev, { role: 'assistant', content: '••• Generating response...', pending: true, id: placeholderId }]);
 
     try {
       const token = localStorage.getItem("token");
@@ -100,23 +87,30 @@ function ChatWindow() {
       const response = await fetch(`${apiUrl}/api/chat`, options);
       if (response.ok) {
         const res = await response.json();
-
         setPrevChats((prev) => {
-          const updatedChats = [
-            ...prev.slice(0, -1),
-            { role: "assistant", content: res.reply },
-          ];
-          try {
-            localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats));
-          } catch (err) {
-            console.log("Error saving to local storage:", err);
-          }
+          const withoutPending = prev.filter(m => !m.pending);
+          const updatedChats = [...withoutPending, { role: 'assistant', content: res.reply }];
+          try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
           return updatedChats;
         });
         setReply(res.reply);
+      } else {
+        // Replace placeholder with a soft failure note
+        setPrevChats((prev) => {
+          const withoutPending = prev.filter(m => !m.pending);
+          const updatedChats = [...withoutPending, { role: 'assistant', content: 'Sorry, I could not generate a response. Please try again.' }];
+          try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
+          return updatedChats;
+        });
       }
     } catch (err) {
-      console.log("Backend not available, using simulated response:", err);
+      console.log("Backend not available:", err);
+      setPrevChats((prev) => {
+        const withoutPending = prev.filter(m => !m.pending);
+        const updatedChats = [...withoutPending, { role: 'assistant', content: 'Sorry, I could not generate a response. Please try again.' }];
+        try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
+        return updatedChats;
+      });
     }
 
     setLoading(false);
