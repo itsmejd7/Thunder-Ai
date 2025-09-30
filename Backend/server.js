@@ -19,6 +19,8 @@ const allowedOrigins = [
   'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app',
   'https://thunder-ai-amber.vercel.app',
   'https://thunder-ai-jayeshs-projects-0a118279.vercel.app',
+  'http://localhost:5173',
+  'http://127.0.0.1:5173',
   ...(process.env.CORS_ORIGINS ? process.env.CORS_ORIGINS.split(',') : [])
 ];
 
@@ -29,6 +31,9 @@ app.use(cors({
   allowedHeaders: ['Content-Type','Authorization'],
   optionsSuccessStatus: 204
 }));
+
+// Explicit preflight handler for any route (some hosts may skip automatic handling)
+
 
 app.use(express.json());
 

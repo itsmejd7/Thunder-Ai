@@ -18,7 +18,11 @@ html, body {
 .app {
     height: 100vh;
     overflow: hidden;
-    background: #eaf6fb; /* very light blue background */
+    background: #f6f7f9; /* subtle neutral background */
+}
+/* Ensure main areas can scroll independently without overlap */
+.app .scroll-area {
+    min-height: 0;
 }
 
 /* Custom scrollbar styling */
@@ -41,6 +45,12 @@ html, body {
 .scrollbar-thin::-webkit-scrollbar-thumb {
     border-radius: 3px;
     background: #b3e0ff; /* light blue */
+}
+
+/* Smooth transitions baseline */
+.transition-base {
+    transition-property: all;
+    transition-duration: 300ms;
 }
 
 /* Ensure proper flex behavior */

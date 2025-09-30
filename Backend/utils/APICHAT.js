@@ -1,6 +1,4 @@
 import dotenv from "dotenv";
-import ModelClient, { isUnexpected } from "@azure-rest/ai-inference";
-import { AzureKeyCredential } from "@azure/core-auth";
 
 dotenv.config();
 
@@ -17,6 +15,13 @@ const GITHUB_MODEL = process.env.GITHUB_MODEL || "deepseek/DeepSeek-V3-0324";
 export async function getAIReply(userInput) {
   if (GITHUB_TOKEN) {
     try {
+      // Lazy-load Azure SDKs only if configured, so local runs don't require them
+      const azureInference = await import("@azure-rest/ai-inference").catch(() => null);
+      const azureCoreAuth = await import("@azure/core-auth").catch(() => null);
+      if (!azureInference || !azureCoreAuth) throw new Error("Azure SDK not installed");
+      const ModelClient = azureInference.default;
+      const { isUnexpected } = azureInference;
+      const { AzureKeyCredential } = azureCoreAuth;
       const client = ModelClient(GITHUB_MODELS_ENDPOINT, new AzureKeyCredential(GITHUB_TOKEN));
       const response = await client.path("/chat/completions").post({
         body: {

@@ -3,7 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { MyContext } from './Mycontext.jsx';
 import logo from '../assets/Thunder-Ai.png';
 
-const API_URL = import.meta.env.VITE_API_URL || 'https://thunder-ai-backend.onrender.com';
+// Prefer local backend during development to avoid remote CORS
+const getApiBase = () => {
+  const envUrl = import.meta.env?.VITE_API_URL;
+  if (envUrl) return envUrl;
+  if (typeof window !== 'undefined' && /^(localhost|127\.0\.0\.1)$/i.test(window.location.hostname)) {
+    return 'http://localhost:5000';
+  }
+  return 'https://thunder-ai-backend.onrender.com';
+};
 
 export default function AuthPage({ mode = 'login' }) {
   const [form, setForm] = useState({ email: '', password: '' });
@@ -22,7 +30,7 @@ export default function AuthPage({ mode = 'login' }) {
     setError('');
     setLoading(true);
     try {
-      const res = await fetch(`${API_URL}/api/auth/${pageMode}`, {
+      const res = await fetch(`${getApiBase()}/api/auth/${pageMode}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(form)
@@ -65,6 +73,7 @@ export default function AuthPage({ mode = 'login' }) {
               className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
               autoFocus
+              autoComplete="email"
             />
           </div>
           <div>
@@ -76,6 +85,8 @@ export default function AuthPage({ mode = 'login' }) {
               onChange={handleChange}
               className="w-full px-4 py-2 border border-blue-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400"
               required
+              autoComplete={pageMode === 'login' ? 'current-password' : 'new-password'}
+              minLength={6}
             />
           </div>
           {error && <div className="text-red-500 text-sm font-semibold text-center">{error}</div>}
