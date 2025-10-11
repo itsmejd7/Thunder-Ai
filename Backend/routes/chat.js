@@ -14,38 +14,15 @@ const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: t
 
 function requireAuth(req, res, next) {
   const auth = req.headers.authorization;
-
-  if (!auth) {
-    console.log("[AUTH DEBUG] Missing Authorization header");
-    return res.status(401).json({ error: "Missing Authorization header" });
-  }
-
-  if (!auth.startsWith("Bearer ")) {
-    console.log("[AUTH DEBUG] Authorization header does not start with 'Bearer ':", auth);
-    return res.status(401).json({ error: "Invalid Authorization header format" });
-  }
-
-  const token = auth.split(" ")[1];
-  if (!token) {
-    console.log("[AUTH DEBUG] Token missing after 'Bearer ':", auth);
-    return res.status(401).json({ error: "Token missing" });
-  }
-
+  if (!auth || !auth.startsWith('Bearer ')) return res.status(401).json({ error: 'Missing token' });
   try {
-    const decoded = jwt.verify(token, JWT_SECRET);
+    const decoded = jwt.verify(auth.split(' ')[1], JWT_SECRET);
     req.user = decoded;
-    console.log("[AUTH DEBUG] Token verified successfully:", decoded);
     next();
-  } catch (err) {
-    console.log("[AUTH DEBUG] Invalid token error:", err.message);
-    
-    const decodedPayload = jwt.decode(token);
-    console.log("[AUTH DEBUG] Decoded payload without verification:", decodedPayload);
-
-    res.status(401).json({ error: "Invalid token", details: err.message });
+  } catch {
+    res.status(401).json({ error: 'Invalid token' });
   }
 }
-
 
 if (!DEV_MODE) {
   router.use(requireAuth);
