@@ -18,7 +18,7 @@ router.post("/signup", authLimiter, async (req, res) => {
   }
   try {
     if (DEV_MODE) {
-      const token = jwt.sign({ userId: `dev_${Buffer.from(email).toString('hex')}`, email }, JWT_SECRET, { expiresIn: "7d" });
+      const token = jwt.sign({ userId: `dev_${Buffer.from(email).toString('hex')}`, email }, JWT_SECRET, { expiresIn: "365d" });
       return res.status(201).json({ token, email });
     }
     // Validate input types and sizes
