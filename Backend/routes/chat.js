@@ -6,7 +6,7 @@ import jwt from "jsonwebtoken";
 import User from "../models/User.js";
 
 const router = express.Router();
-const JWT_SECRET = process.env.JWT_SECRET || "my-super-secret-key"; // fixed secret
+const JWT_SECRET = process.env.JWT_SECRET || "changeme-super-secret";
 const DEV_MODE = !process.env.MONGODB_URI;
 const CHAT_TIMEOUT_MS = Math.max(5000, Number(process.env.CHAT_TIMEOUT_MS || 30000));
 
