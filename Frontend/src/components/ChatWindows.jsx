@@ -1,20 +1,23 @@
 import Chat from "./chat.jsx";
-import { MyContext } from "./Mycontext.jsx";
-import { useContext, useState, useEffect, useRef } from "react";
+import { useState, useEffect, useRef } from "react";
 import { ScaleLoader } from "react-spinners";
+import { v1 as uuidv1 } from "uuid";
 
-function ChatWindow() {
+function ChatWindow({ chat, ui, authState }) {
   const {
     prompt,
     setPrompt,
     reply,
     setReply,
     currThreadId,
+    setCurrThreadId,
+    prevChats,
     setPrevChats,
+    newChat,
     setNewChat,
-    sidebarOpen,
-    setSidebarOpen,
-  } = useContext(MyContext);
+  } = chat;
+  const { sidebarOpen, setSidebarOpen } = ui;
+  const { setAuth } = authState;
 
   const [loading, setLoading] = useState(false);
   const textareaRef = useRef(null);
@@ -54,18 +57,19 @@ function ChatWindow() {
 
     const userMessage = prompt;
     setPrompt("");
+    const activeThreadId = currThreadId || uuidv1();
+    if (!currThreadId) setCurrThreadId(activeThreadId);
 
     setPrevChats((prev) => {
       const updatedChats = [...prev, { role: "user", content: userMessage }];
       try {
-        localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats));
+        localStorage.setItem(`chat_${activeThreadId}`, JSON.stringify(updatedChats));
       } catch (err) {
         console.log("Error saving to local storage:", err);
       }
       return updatedChats;
     });
 
-    // Show a transient "generating" placeholder bubble instead of a final message
     const placeholderId = `pending_${Date.now()}`;
     setPrevChats((prev) => [...prev, { role: 'assistant', content: '••• Generating response...', pending: true, id: placeholderId }]);
 
@@ -80,11 +84,18 @@ function ChatWindow() {
         },
         body: JSON.stringify({
           message: userMessage,
-          threadId: currThreadId,
+          threadId: activeThreadId,
         }),
       };
 
       const response = await fetch(`${apiUrl}/api/chat`, options);
+      if (response.status === 401) {
+        setPrevChats((prev) => prev.filter(m => !m.pending));
+        try { localStorage.removeItem("token"); } catch {}
+        setAuth(false);
+        setLoading(false);
+        return;
+      }
       if (response.ok) {
         const res = await response.json();
         const content = res?.reply || '';
@@ -93,17 +104,16 @@ function ChatWindow() {
           const withoutPending = prev.filter(m => !m.pending);
           const finalContent = content?.trim() ? content : (modelError?.trim() ? `Model error: ${modelError}` : 'Sorry, I could not generate a response. Please try again.');
           const updatedChats = [...withoutPending, { role: 'assistant', content: finalContent }];
-          try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
+          try { localStorage.setItem(`chat_${activeThreadId}`, JSON.stringify(updatedChats)); } catch {}
           return updatedChats;
         });
         setReply(content);
       } else {
-        // Replace placeholder with backend error body
         const raw = await response.text().catch(() => '');
         setPrevChats((prev) => {
           const withoutPending = prev.filter(m => !m.pending);
           const updatedChats = [...withoutPending, { role: 'assistant', content: `HTTP ${response.status}: ${raw?.slice(0, 200)}` }];
-          try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
+          try { localStorage.setItem(`chat_${activeThreadId}`, JSON.stringify(updatedChats)); } catch {}
           return updatedChats;
         });
       }
@@ -112,7 +122,7 @@ function ChatWindow() {
       setPrevChats((prev) => {
         const withoutPending = prev.filter(m => !m.pending);
         const updatedChats = [...withoutPending, { role: 'assistant', content: 'Sorry, I could not generate a response. Please try again.' }];
-        try { localStorage.setItem(`chat_${currThreadId}`, JSON.stringify(updatedChats)); } catch {}
+        try { localStorage.setItem(`chat_${activeThreadId}`, JSON.stringify(updatedChats)); } catch {}
         return updatedChats;
       });
     }
@@ -121,17 +131,17 @@ function ChatWindow() {
   };
 
   return (
-    <div className="flex flex-col h-screen w-full bg-white overflow-hidden">
-      <header className="flex-shrink-0 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 bg-gray-50 border-b border-gray-200 z-20">
+    <div className="flex flex-col h-full min-h-0 w-full bg-[#0b1426] overflow-hidden">
+      <header className="flex-shrink-0 flex items-center justify-between px-3 py-3 sm:px-4 sm:py-4 bg-black/30 border-b border-white/10 z-20">
         <button
-          className="lg:hidden p-2 rounded-lg hover:bg-blue-100 active:bg-blue-200 transition-colors duration-200"
+          className="lg:hidden p-2 rounded-lg hover:bg-white/10 transition-colors duration-200"
           onClick={() => setSidebarOpen(!sidebarOpen)}
           aria-label="Toggle sidebar"
         >
-          <i className="fa-solid fa-bars text-gray-700 text-lg sm:text-xl"></i>
+          <i className="fa-solid fa-bars text-blue-200 text-lg sm:text-xl"></i>
         </button>
 
-        <h1 className="text-gray-800 text-base sm:text-lg md:text-xl font-medium flex items-center gap-2">
+        <h1 className="text-white text-base sm:text-lg md:text-xl font-medium flex items-center gap-2">
           Thunder-AI
         </h1>
 
@@ -139,15 +149,15 @@ function ChatWindow() {
       </header>
 
       <main className="flex-1 min-h-0 overflow-hidden">
-        <Chat loading={loading} />
+        <Chat loading={loading} chat={chat} />
       </main>
 
-      <footer className="flex-shrink-0 bg-white border-t border-gray-100 shadow-lg z-30 px-3 py-3 sm:px-4 sm:py-4">
+      <footer className="flex-shrink-0 bg-black/30 border-t border-white/10 shadow-lg z-30 px-3 py-3 sm:px-4 sm:py-4">
         <div className="w-full max-w-4xl mx-auto">
           <div className="flex items-end gap-2 sm:gap-3">
             <textarea
               ref={textareaRef}
-              className="flex-1 bg-transparent text-blue-900 placeholder-blue-400 px-3 py-2.5 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-300 text-sm sm:text-base resize-none rounded-xl sm:rounded-2xl border border-blue-200 shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
+              className="flex-1 bg-black/20 text-white placeholder-blue-300 px-3 py-2.5 sm:px-4 sm:py-3 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base resize-none rounded-xl sm:rounded-2xl border border-white/10 shadow-md transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed no-scrollbar"
               placeholder="Message Thunder-AI..."
               value={prompt}
               onChange={(e) => setPrompt(e.target.value)}
@@ -163,10 +173,10 @@ function ChatWindow() {
             />
             
             <button
-              className={`flex-shrink-0 p-2.5 sm:p-3 rounded-xl transition-all duration-300 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-300 min-w-[44px] min-h-[44px] ${
+              className={`flex-shrink-0 p-3 sm:p-3.5 rounded-full transition-all duration-300 flex items-center justify-center focus:outline-none focus:ring-2 focus:ring-blue-500 min-w-[48px] min-h-[48px] shadow-lg ${
                 loading || !prompt.trim()
-                  ? 'text-blue-200 cursor-not-allowed bg-blue-50'
-                  : 'text-blue-600 hover:text-blue-500 hover:bg-blue-100 bg-blue-100 active:scale-95'
+                  ? 'text-blue-200 cursor-not-allowed bg-white/10'
+                  : 'text-white bg-gradient-to-br from-blue-500 to-blue-700 hover:from-blue-400 hover:to-blue-600 active:scale-95'
               }`}
               onClick={(e) => {
                 e.preventDefault();
@@ -176,14 +186,14 @@ function ChatWindow() {
               aria-label="Send message"
             >
               {loading ? (
-                <ScaleLoader color="#1976d2" height={12} width={3} />
+                <ScaleLoader color="#8ab6ff" height={12} width={3} />
               ) : (
                 <i className="fa-solid fa-paper-plane text-base sm:text-lg"></i>
               )}
             </button>
           </div>
           
-          <p className="text-blue-400 text-xs sm:text-sm text-center mt-2 sm:mt-3">
+          <p className="text-blue-300 text-xs sm:text-sm text-center mt-2 sm:mt-3">
             Thunder-AI can make mistakes. Consider checking important information.
           </p>
         </div>

@@ -8,7 +8,6 @@ const router = express.Router();
 const JWT_SECRET = process.env.JWT_SECRET || "changeme-super-secret";
 const DEV_MODE = !process.env.MONGODB_URI;
 
-// Per-route limiter for auth endpoints
 const authLimiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 50, standardHeaders: true, legacyHeaders: false });
 
 router.post("/signup", authLimiter, async (req, res) => {
@@ -21,7 +20,6 @@ router.post("/signup", authLimiter, async (req, res) => {
       const token = jwt.sign({ userId: `dev_${Buffer.from(email).toString('hex')}`, email }, JWT_SECRET, { expiresIn: "720d" });
       return res.status(201).json({ token, email });
     }
-    // Validate input types and sizes
     if (typeof email !== 'string' || typeof password !== 'string') {
       return res.status(400).json({ error: "Invalid input." });
     }
@@ -43,7 +41,6 @@ router.post("/signup", authLimiter, async (req, res) => {
   }
 });
 
-// Login route
 router.post("/login", authLimiter, async (req, res) => {
   const { email, password } = req.body || {};
   if (!email || !password) {

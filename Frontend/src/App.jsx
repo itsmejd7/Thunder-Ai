@@ -1,11 +1,11 @@
 import './App.css';
 import Sidebar from "./components/Sidebar.jsx";
 import ChatWindow from './components/ChatWindows.jsx';
-import { MyContext } from './components/Mycontext.jsx';
 import { useState, useEffect } from 'react';
 import { v1 as uuidv1 } from 'uuid';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import AuthPage from './components/AuthPage.jsx';
+import AboutPage from './components/AboutPage.jsx';
 
 function App() {
   const [prompt, setPrompt] = useState("");
@@ -17,18 +17,23 @@ function App() {
   const [auth, setAuth] = useState(() => !!localStorage.getItem('token'));
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
-  const providerValues = {
-    prompt, setPrompt,
-    reply, setReply,
-    currThreadId, setCurrThreadId,
-    newChat, setNewChat,
-    prevChats, setPrevChats,
-    allThreads, setAllThreads,
-    auth, setAuth,
-    sidebarOpen, setSidebarOpen
+  const chat = {
+    prompt,
+    setPrompt,
+    reply,
+    setReply,
+    currThreadId,
+    setCurrThreadId,
+    prevChats,
+    setPrevChats,
+    newChat,
+    setNewChat
   };
 
-  // Close sidebar on resize and on route change
+  const threads = { allThreads, setAllThreads };
+  const ui = { sidebarOpen, setSidebarOpen };
+  const authState = { auth, setAuth };
+
   useEffect(() => {
     const closeSidebar = () => {
       if (window.innerWidth >= 1024) {
@@ -40,7 +45,6 @@ function App() {
     return () => window.removeEventListener('resize', closeSidebar);
   }, []);
 
-  // Close sidebar when clicking outside on mobile
   useEffect(() => {
     const handleClickOutside = (e) => {
       if (sidebarOpen && window.innerWidth < 1024) {
@@ -56,7 +60,6 @@ function App() {
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, [sidebarOpen]);
 
-  // Prevent body scroll when sidebar is open on mobile
   useEffect(() => {
     if (sidebarOpen && window.innerWidth < 1024) {
       document.body.style.overflow = 'hidden';
@@ -68,58 +71,59 @@ function App() {
     };
   }, [sidebarOpen]);
 
+  useEffect(() => {
+    if (auth && !currThreadId) {
+      setCurrThreadId(uuidv1());
+      setNewChat(true);
+    }
+  }, [auth, currThreadId, setCurrThreadId, setNewChat]);
+
   return (
     <Router>
-      <div className="app min-h-screen flex flex-col">
-        <MyContext.Provider value={providerValues}>
-          <Routes>
-            <Route path="/login" element={<AuthPage mode="login" />} />
-            <Route path="/signup" element={<AuthPage mode="signup" />} />
-            <Route
-              path="/*"
-              element={
-                auth ? (
-                  <div className="flex min-h-screen w-full overflow-hidden">
-                    {/* Sidebar overlay for mobile */}
-                    {sidebarOpen && (
-                      <div
-                        className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-300"
-                        onClick={() => setSidebarOpen(false)}
+      <div className="app app-shell">
+        <Routes>
+          <Route path="/login" element={<AuthPage mode="login" setAuth={setAuth} />} />
+          <Route path="/signup" element={<AuthPage mode="signup" setAuth={setAuth} />} />
+          <Route path="/about" element={<AboutPage />} />
+          <Route
+            path="/*"
+            element={
+              authState.auth ? (
+                <div className="app-layout">
+                  {ui.sidebarOpen && (
+                    <div
+                      className="fixed inset-0 bg-black/40 z-40 lg:hidden transition-opacity duration-300"
+                      onClick={() => ui.setSidebarOpen(false)}
+                    />
+                  )}
+
+                  <div className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 lg:relative lg:translate-x-0 ${ui.sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:block`}>
+                    <div className="h-full overflow-y-auto max-h-screen">
+                      <Sidebar
+                        chat={chat}
+                        threads={threads}
+                        ui={ui}
+                        authState={authState}
                       />
-                    )}
-
-                    {/* Sidebar container */}
-                    <div className={`fixed inset-y-0 left-0 z-50 w-72 max-w-[85vw] bg-white shadow-xl transform transition-transform duration-300 lg:relative lg:translate-x-0 ${sidebarOpen ? 'translate-x-0' : '-translate-x-full'} lg:block`}>
-                      <div className="h-full overflow-y-auto max-h-screen">
-                        <Sidebar />
-                      </div>
                     </div>
-
-                    {/* Mobile toggle button */}
-                    {!sidebarOpen && (
-                      <button
-                        className="fixed top-4 left-4 z-30 bg-blue-500 text-white p-3 rounded-xl shadow-lg lg:hidden transition-all duration-300 focus:outline-none focus:ring-2 focus:ring-blue-300"
-                        onClick={() => setSidebarOpen(true)}
-                        aria-label="Open sidebar"
-                      >
-                        <i className="fa-solid fa-bars text-xl"></i>
-                      </button>
-                    )}
-
-                    {/* Main content */}
-                    <main className="flex-1 min-w-0 min-h-screen bg-[#eaf6fd]">
-                      <div className="flex flex-col min-h-screen">
-                        <ChatWindow />
-                      </div>
-                    </main>
                   </div>
-                ) : (
-                  <Navigate to="/login" replace />
-                )
-              }
-            />
-          </Routes>
-        </MyContext.Provider>
+
+                  <main className="app-main bg-gradient-to-br from-[#050b18] via-[#0b1b3a] to-[#0a0f1f]">
+                    <div className="flex flex-col h-full min-h-0">
+                      <ChatWindow
+                        chat={chat}
+                        ui={ui}
+                        authState={authState}
+                      />
+                    </div>
+                  </main>
+                </div>
+              ) : (
+                <Navigate to="/login" replace />
+              )
+            }
+          />
+        </Routes>
       </div>
     </Router>
   );

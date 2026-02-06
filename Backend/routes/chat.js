@@ -12,10 +12,8 @@ const CHAT_TIMEOUT_MS = Math.max(5000, Number(process.env.CHAT_TIMEOUT_MS || 300
 
 const chatLimiter = rateLimit({ windowMs: 60 * 1000, max: 30, standardHeaders: true, legacyHeaders: false });
 
-// Universal auth middleware
 function requireAuth(req, res, next) {
   if (DEV_MODE) {
-    // In DEV mode, use fallback dev user
     req.user = { userId: 'dev_user', email: 'dev@example.com' };
     return next();
   }
@@ -32,11 +30,9 @@ function requireAuth(req, res, next) {
   }
 }
 
-// Apply auth for all chat routes
 router.use(requireAuth);
 router.use(chatLimiter);
 
-// Test route
 router.post("/test", async (req, res) => {
   try {
     const thread = new Thread({
@@ -51,7 +47,6 @@ router.post("/test", async (req, res) => {
   }
 });
 
-// Get all threads
 router.get("/thread", async (req, res) => {
   try {
     const threads = await Thread.find({ user: req.user.userId }).sort({ updatedAt: -1 }).lean();
@@ -61,7 +56,6 @@ router.get("/thread", async (req, res) => {
   }
 });
 
-// Get single thread
 router.get("/thread/:threadId", async (req, res) => {
   const { threadId } = req.params;
   try {
@@ -74,7 +68,6 @@ router.get("/thread/:threadId", async (req, res) => {
   }
 });
 
-// Delete thread
 router.delete("/thread/:threadId", async (req, res) => {
   const { threadId } = req.params;
   try {
@@ -87,7 +80,6 @@ router.delete("/thread/:threadId", async (req, res) => {
   }
 });
 
-// Chat route
 router.post("/chat", async (req, res) => {
   req.setTimeout?.(CHAT_TIMEOUT_MS + 2000);
   const { threadId, message } = req.body || {};
@@ -111,10 +103,7 @@ router.post("/chat", async (req, res) => {
       thread.messages.push({ role: "user", content: message });
     }
 
-    const assistantReply = await Promise.race([
-      getAIReply(message),
-      new Promise((_, reject) => setTimeout(() => reject(new Error(`CHAT_TIMEOUT after ${CHAT_TIMEOUT_MS}ms`)), CHAT_TIMEOUT_MS))
-    ]);
+    const assistantReply = await getAIReply(message);
 
     thread.messages.push({ role: "assistant", content: assistantReply });
     thread.updatedAt = new Date();
@@ -123,19 +112,7 @@ router.post("/chat", async (req, res) => {
 
     res.json({ reply: assistantReply });
   } catch (err) {
-    const tryEvalMath = (text) => {
-      try {
-        if (typeof text !== 'string') return null;
-        const expr = text.replace(/[^0-9+\-*/().\s]/g, '').trim();
-        if (!expr || expr.length > 50 || /[*+/]{2,}/.test(expr) || !/[0-9]/.test(expr)) return null;
-        return String(Function(`"use strict"; return (${expr});`)());
-      } catch { return null; }
-    };
-
-    const math = tryEvalMath(String(message));
-    const fallback = math !== null
-      ? `Result: ${math}`
-      : 'I could not generate a response right now. Please try again in a moment.';
+    const fallback = 'I could not generate a response right now. Please try again in a moment.';
 
     try {
       const userId = req.user.userId;

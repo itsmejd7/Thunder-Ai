@@ -1,11 +1,10 @@
-import React, { useContext, useState, useEffect, useRef } from "react";
-import { MyContext } from "./Mycontext";
+import React, { useState, useEffect, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import rehypeHighlight from "rehype-highlight";
 import { ScaleLoader } from "react-spinners";
 
-function Chat({ loading }) {
-    const { newChat, prevChats, reply, setPrompt, setNewChat, setPrevChats } = useContext(MyContext);
+function Chat({ loading, chat }) {
+    const { newChat, prevChats, reply, setPrompt } = chat;
     const scrollRef = useRef(null);
     const [latestReply, setLatestReply] = useState(null);
     
@@ -43,47 +42,27 @@ function Chat({ loading }) {
         scrollRef.current.scrollTo({ top: scrollRef.current.scrollHeight, behavior: 'smooth' });
     }, [prevChats, latestReply, loading]);
     
-    const examplePrompts = [
-        {
-            title: "Write a professional email",
-            description: "Compose a formal email for business communication",
-            prompt: "Write a professional email to schedule a meeting with a client"
-        },
-        {
-            title: "Explain a complex topic",
-            description: "Break down difficult concepts in simple terms",
-            prompt: "Explain quantum computing in simple terms for a beginner"
-        },
-        {
-            title: "Help with coding",
-            description: "Get assistance with programming and debugging",
-            prompt: "Help me debug this JavaScript function"
-        },
-        {
-            title: "Creative writing",
-            description: "Generate stories, poems, or creative content",
-            prompt: "Write a short story about a time traveler"
-        },
-        {
-            title: "Data analysis",
-            description: "Analyze and interpret data sets",
-            prompt: "Help me analyze this sales data and create insights"
-        },
-        {
-            title: "Language translation",
-            description: "Translate text between different languages",
-            prompt: "Translate this English text to Spanish"
-        }
-    ];
-
-    const handlePromptClick = (promptText) => {
-        setPrompt(promptText);
+    const focusInput = () => {
         setTimeout(() => {
             const textarea = document.querySelector('textarea[placeholder*="Thunder-AI"]');
             if (textarea) {
                 textarea.focus();
             }
         }, 100);
+    };
+
+    const quickPrompts = [
+        { label: "Write emails", value: "Write a professional email" },
+        { label: "💻 Fix code", value: "Help me debug this code" },
+        { label: "📊 Analyze data", value: "Help me analyze this data" },
+        { label: "🌍 Translate text", value: "Translate this text to another language" },
+        { label: "📚 Explain topics", value: "Explain this topic in simple terms" },
+        { label: "🎨 Create content", value: "Create content based on this idea" },
+    ];
+
+    const handlePromptClick = (value) => {
+        setPrompt(value);
+        focusInput();
     };
 
     const safeString = (content) => {
@@ -101,27 +80,27 @@ function Chat({ loading }) {
 
     if (newChat && (!prevChats || prevChats.length === 0)) {
         return (
-            <div className="h-full flex flex-col items-center justify-center bg-white p-4 sm:p-6 md:p-8 overflow-hidden">
-                <div className="text-center mb-6 sm:mb-8 md:mb-10">
-                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-blue-900 mb-2">
+            <div className="h-full flex flex-col items-center justify-center bg-[#0b1426] p-4 sm:p-6 md:p-8 overflow-hidden">
+                <div className="text-center max-w-2xl w-full">
+                    <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white mb-2">
                         Thunder-AI
                     </h1>
-                    <p className="text-blue-400 text-sm sm:text-base md:text-lg">
+                    <p className="text-blue-300 text-sm sm:text-base md:text-lg mb-6">
                         How can I help you today?
                     </p>
-                </div>
 
-                <div className="w-full max-w-5xl flex-1 flex items-center overflow-y-auto">
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3 sm:gap-4 w-full">
-                        {examplePrompts.map((prompt, index) => (
-                            <div 
-                                key={index}
-                                className="bg-blue-50 p-4 sm:p-5 rounded-xl border border-blue-200 hover:bg-blue-100 hover:shadow-md transition-all duration-200 cursor-pointer active:scale-95"
-                                onClick={() => handlePromptClick(prompt.prompt)}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 w-full">
+                        {quickPrompts.map((item) => (
+                            <button
+                                key={item.label}
+                                className="text-left bg-black/30 border border-white/10 rounded-xl px-4 py-3 sm:px-5 sm:py-4 shadow-sm hover:bg-white/5 transition-all duration-200 active:scale-95"
+                                onClick={() => handlePromptClick(item.value)}
+                                type="button"
                             >
-                                <h3 className="text-blue-900 font-semibold mb-2 text-sm sm:text-base">{prompt.title}</h3>
-                                <p className="text-blue-600 text-xs sm:text-sm">{prompt.description}</p>
-                            </div>
+                                <span className="text-blue-100 font-semibold text-sm sm:text-base">
+                                    {item.label}
+                                </span>
+                            </button>
                         ))}
                     </div>
                 </div>
@@ -130,11 +109,11 @@ function Chat({ loading }) {
     }
     
     return (
-        <div ref={scrollRef} className="h-full overflow-y-auto bg-white scrollbar-thin scrollbar-track-transparent">
+        <div ref={scrollRef} className="h-full overflow-y-auto bg-[#0b1426] scrollbar-thin scrollbar-track-transparent">
             <div className="max-w-4xl mx-auto p-3 sm:p-4 md:p-6 pb-24 sm:pb-28 md:pb-32">
                 {(!prevChats || prevChats.length === 0) && (
                     <div className="text-center py-8 sm:py-12 md:py-16">
-                        <p className="text-blue-400 text-base sm:text-lg md:text-xl">Start a conversation by typing a message below!</p>
+                        <p className="text-blue-300 text-base sm:text-lg md:text-xl">Start a conversation by typing a message below!</p>
                     </div>
                 )}
                 
@@ -146,19 +125,19 @@ function Chat({ loading }) {
                         {chat.role === "user" ? (
                             <div className="flex items-start gap-2 sm:gap-3 md:gap-4 w-full justify-end">
                                 <div className="flex-1"></div>
-                                <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-white text-gray-900 rounded-2xl shadow-sm p-3 sm:p-4 border border-gray-200 flex items-center">
-                                    <i className="fa-solid fa-user text-gray-400 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
+                                <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-black/40 text-white rounded-2xl shadow-sm p-3 sm:p-4 border border-white/10 flex items-center">
+                                    <i className="fa-solid fa-user text-blue-200 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
                                     <span className="font-medium text-sm sm:text-base break-words">{safeString(chat.content)}</span>
                                 </div>
                             </div>
                         ) : (
                             <div className="flex items-start gap-2 sm:gap-3 md:gap-4 w-full justify-start">
-                                <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-white text-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200">
+                                <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-black/30 text-blue-100 rounded-xl shadow-sm p-3 sm:p-4 border border-white/10">
                                     <div className="flex items-center mb-3">
-                                        <i className="fa-solid fa-robot text-gray-600 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
-                                        <span className="text-gray-900 font-semibold text-sm sm:text-base">Thunder-AI</span>
+                                        <i className="fa-solid fa-robot text-blue-300 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
+                                        <span className="text-white font-semibold text-sm sm:text-base">Thunder-AI</span>
                                     </div>
-                                    <div className="text-gray-800 text-sm sm:text-base break-words overflow-hidden">
+                                    <div className="text-blue-100 text-sm sm:text-base break-words overflow-hidden">
                                         <ReactMarkdown 
                                             rehypePlugins={[rehypeHighlight]}
                                             components={{
@@ -179,7 +158,7 @@ function Chat({ loading }) {
                                                     return !inline ? (
                                                         <CodeBlock code={codeContent.replace(/\n$/, "")} language={match ? match[1] : undefined} />
                                                     ) : (
-                                                        <code className="bg-gray-100 px-1 py-0.5 rounded text-xs sm:text-sm overflow-x-auto" {...props}>{codeContent}</code>
+                                                        <code className="bg-white/10 px-1 py-0.5 rounded text-xs sm:text-sm overflow-x-auto" {...props}>{codeContent}</code>
                                                     );
                                                 }
                                             }}
@@ -196,12 +175,12 @@ function Chat({ loading }) {
                 
                 {prevChats.length > 0 && prevChats[prevChats.length - 1]?.role === "assistant" && (
                     <div className="flex w-full my-3 sm:my-4">
-                        <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-white text-gray-800 rounded-xl shadow-sm p-3 sm:p-4 border border-gray-200 relative">
+                        <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-black/30 text-blue-100 rounded-xl shadow-sm p-3 sm:p-4 border border-white/10 relative">
                             <div className="flex items-center mb-3">
-                                <i className="fa-solid fa-robot text-indigo-600 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
-                                <span className="text-gray-900 font-semibold text-sm sm:text-base">Thunder-AI</span>
+                                <i className="fa-solid fa-robot text-blue-300 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
+                                <span className="text-white font-semibold text-sm sm:text-base">Thunder-AI</span>
                             </div>
-                            <div className="text-gray-800 text-sm sm:text-base break-words overflow-hidden">
+                            <div className="text-blue-100 text-sm sm:text-base break-words overflow-hidden">
                                 <ReactMarkdown 
                                     rehypePlugins={[rehypeHighlight]}
                                     components={{
@@ -222,7 +201,7 @@ function Chat({ loading }) {
                                             return !inline ? (
                                                 <CodeBlock code={codeContent.replace(/\n$/, "")} language={match ? match[1] : undefined} />
                                             ) : (
-                                                <code className="bg-gray-100 px-1 py-0.5 rounded text-xs sm:text-sm overflow-x-auto" {...props}>{codeContent}</code>
+                                                <code className="bg-white/10 px-1 py-0.5 rounded text-xs sm:text-sm overflow-x-auto" {...props}>{codeContent}</code>
                                             );
                                         }
                                     }}
@@ -240,11 +219,11 @@ function Chat({ loading }) {
                 
                 {loading && (
                     <div className="flex w-full my-3 sm:my-4">
-                        <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-blue-50 text-blue-900 rounded-2xl shadow-md p-3 sm:p-4 border border-blue-100 flex items-center">
-                            <i className="fa-solid fa-robot text-blue-400 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
+                        <div className="max-w-[85%] sm:max-w-[80%] md:max-w-[70%] bg-black/30 text-blue-100 rounded-2xl shadow-md p-3 sm:p-4 border border-white/10 flex items-center">
+                            <i className="fa-solid fa-robot text-blue-300 text-base sm:text-lg mr-2 sm:mr-3 flex-shrink-0"></i>
                             <span className="flex items-center gap-2 sm:gap-3">
-                                <ScaleLoader color="#1976d2" height={15} width={3} />
-                                <span className="text-blue-400 text-xs sm:text-sm md:text-base">Thunder-AI is thinking...</span>
+                                <ScaleLoader color="#8ab6ff" height={15} width={3} />
+                                <span className="text-blue-200 text-xs sm:text-sm md:text-base">Thunder-AI is thinking...</span>
                             </span>
                         </div>
                         <div className="flex-1"></div>

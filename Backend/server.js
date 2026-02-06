@@ -12,8 +12,6 @@ dotenv.config();
 const app = express();
 const PORT = process.env.PORT || 5000;
 app.set('trust proxy', 1);
-
-
 const allowedOrigins = [
   'https://thunder-ai-frontend.vercel.app',
   'https://thunder-ai-frontend-h8zqa0ph7-jayeshs-projects-0a118279.vercel.app',
@@ -32,9 +30,6 @@ app.use(cors({
   optionsSuccessStatus: 204
 }));
 
-// Explicit preflight handler for any route (some hosts may skip automatic handling)
-
-
 app.use(express.json());
 
 const apiLimiter = rateLimit({
@@ -45,8 +40,6 @@ const apiLimiter = rateLimit({
   skip: (req) => req.method === 'OPTIONS'
 });
 app.use(apiLimiter);
-
-
 app.get("/", (req, res) => {
   res.json({ message: "Thunder-AI Backend is running!" });
 });
