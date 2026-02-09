@@ -235,10 +235,13 @@ export default function AuthPage({ mode = 'login', setAuth }) {
         <section className="bg-[#0b1426] border border-white/10 rounded-2xl p-6 sm:p-8 shadow-2xl">
           <h2 className="text-xl font-semibold text-white mb-3">Why Thunder-AI?</h2>
           <ul className="space-y-3 text-blue-200 text-sm sm:text-base">
-            <li>Clean, focused chat UI designed for speed and clarity.</li>
-            <li>Reliable session handling with secure token validation.</li>
-            <li>Production-ready UX with inline validation and helpful feedback.</li>
-          </ul>
+          <li>AI-powered assistant built for fast, accurate, real-time responses.</li>
+          <li>Secure, scalable architecture with smart session management.</li>
+          <li>Clean, modern interface with industry-standard UX design.</li>
+          <li>Enterprise-grade reliability with intelligent error handling.</li>
+          <li>Optimized for productivity, clarity, and seamless conversations.</li>
+        </ul>
+
           <div className="mt-6 flex items-center gap-3">
             <Link to="/about" className="text-blue-200 font-semibold hover:underline">
               Learn more
