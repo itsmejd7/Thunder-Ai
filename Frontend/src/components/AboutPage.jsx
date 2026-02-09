@@ -3,7 +3,7 @@ import logo from "../assets/Thunder-Ai.png";
 
 export default function AboutPage() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-[#050b18] via-[#0b1b3a] to-[#0a0f1f] text-white">
+    <div className="h-screen overflow-y-auto bg-gradient-to-br from-[#050b18] via-[#0b1b3a] to-[#0a0f1f] text-white">
       <header className="bg-black/40 border-b border-white/10 backdrop-blur sticky top-0 z-10">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between">
           <Link to="/" className="flex items-center gap-3">
